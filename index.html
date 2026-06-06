@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monteverde — Gestión de Insumos | Clínica Monte Verde</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --teal: #5E9B61;
+    --teal-dark: #3D6B40;
+    --teal-light: #EBF5EC;
+    --teal-mid: #C0DEC1;
+    --gray: #555;
+    --gray-light: #f5f5f5;
+    --border: #d4e4d5;
+    --white: #fff;
+    --success: #3a7d44;
+    --success-light: #e6f4e8;
+    --warning: #e65100;
+    --warning-light: #fff3e0;
+    --danger: #c62828;
+    --danger-light: #ffebee;
+    --info: #2e6da4;
+    --info-light: #e8f0f8;
+    --pending: #6a1b9a;
+    --pending-light: #f3e5f5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f2f6f2; color: #222; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--teal);
+    color: var(--white);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    position: sticky; top: 0; z-index: 100;
+  }
+  header .logo { display: flex; align-items: center; gap: 12px; }
+  header .logo svg { width: 32px; height: 32px; }
+  header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.5px; }
+  header .subtitle { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+  .header-right { font-size: 0.85rem; opacity: 0.85; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--white);
+    border-bottom: 2px solid var(--border);
+    padding: 0 32px;
+    gap: 4px;
+  }
+  .tab-btn {
+    padding: 14px 22px;
+    border: none;
+    background: none;
+    font-size: 0.92rem;
+    color: var(--gray);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-weight: 500;
+    transition: color 0.2s, border-color 0.2s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn:hover { color: var(--teal); }
+  .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 700; }
+  .tab-icon { font-size: 1.05rem; }
+
+  /* ── MAIN ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--teal-dark);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--teal-light);
+    padding-bottom: 12px;
+  }
+
+  /* ── FORM ── */
+  .form-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .form-group { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 0.83rem; font-weight: 600; color: var(--gray); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 6px;
+    font-size: 0.92rem; transition: border-color 0.2s; background: #fafafa;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--teal); background: var(--white);
+  }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 22px; border: none; border-radius: 7px; font-size: 0.92rem;
+    font-weight: 600; cursor: pointer; display: inline-flex; align-items: center;
+    gap: 7px; transition: background 0.18s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--teal); color: var(--white); }
+  .btn-primary:hover { background: var(--teal-dark); }
+  .btn-success { background: var(--success); color: var(--white); font-size: 0.82rem; padding: 7px 14px; }
+  .btn-success:hover { background: #1b5e20; }
+  .btn-warning { background: #f57c00; color: var(--white); font-size: 0.82rem; padding: 7px 14px; }
+  .btn-danger { background: var(--danger); color: var(--white); font-size: 0.82rem; padding: 7px 14px; }
+  .btn-outline { background: none; border: 1.5px solid var(--teal); color: var(--teal); padding: 7px 16px; font-size: 0.84rem; border-radius: 6px; }
+  .btn-outline:hover { background: var(--teal-light); }
+  .btn-sm { padding: 5px 11px; font-size: 0.8rem; border-radius: 5px; }
+  .btn-ghost { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 0.82rem; padding: 4px 8px; border-radius: 4px; }
+  .btn-ghost:hover { background: var(--gray-light); }
+
+  /* ── INSUMOS TABLA ── */
+  .insumos-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.88rem; }
+  .insumos-table th { background: var(--teal-light); color: var(--teal-dark); font-weight: 700; padding: 9px 12px; text-align: left; }
+  .insumos-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .insumos-table tr:hover td { background: #fafcfd; }
+  .insumos-table select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
+  .insumos-table input[type="number"] { width: 70px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; }
+  .remove-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; }
+  .remove-btn:hover { color: var(--danger); background: var(--danger-light); }
+
+  /* ── BADGES / STATUS ── */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .badge-abierto { background: var(--info-light); color: var(--info); }
+  .badge-revision { background: var(--warning-light); color: var(--warning); }
+  .badge-parcial { background: #fff8e1; color: #f57f17; }
+  .badge-entregado { background: var(--success-light); color: var(--success); }
+  .badge-pendiente { background: var(--pending-light); color: var(--pending); }
+  .badge-cancelado { background: #eceff1; color: #546e7a; }
+  .badge-urgente { background: #ffebee; color: #b71c1c; font-size: 0.7rem; }
+  .badge-disponible { background: var(--success-light); color: var(--success); }
+  .badge-sinstock { background: var(--danger-light); color: var(--danger); }
+
+  /* ── TICKET CARDS ── */
+  .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .ticket-card {
+    background: var(--white); border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    border-left: 5px solid var(--teal); padding: 16px 18px; cursor: pointer;
+    transition: box-shadow 0.18s, transform 0.1s;
+  }
+  .ticket-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.13); transform: translateY(-1px); }
+  .ticket-card.status-abierto { border-left-color: var(--info); }
+  .ticket-card.status-revision { border-left-color: var(--warning); }
+  .ticket-card.status-parcial { border-left-color: #f57f17; }
+  .ticket-card.status-entregado { border-left-color: var(--success); }
+  .ticket-card.status-pendiente { border-left-color: var(--pending); }
+  .ticket-card.status-cancelado { border-left-color: #90a4ae; opacity: 0.7; }
+  .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .ticket-code { font-size: 0.78rem; font-weight: 700; color: var(--gray); font-family: monospace; }
+  .ticket-box { font-weight: 700; color: var(--teal-dark); font-size: 0.95rem; }
+  .ticket-items { font-size: 0.83rem; color: var(--gray); margin-top: 6px; line-height: 1.5; }
+  .ticket-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.78rem; color: #aaa; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 12px; width: 90%; max-width: 680px;
+    max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+    animation: fadeIn 0.18s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .modal-header {
+    background: var(--teal); color: var(--white); padding: 18px 24px;
+    border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-header h3 { font-size: 1.05rem; }
+  .modal-close { background: none; border: none; color: var(--white); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+  .modal-body { padding: 22px 24px; }
+  .modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── ITEM STATUS ROW ── */
+  .item-status-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .item-status-row:last-child { border-bottom: none; }
+  .item-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
+  .item-qty { font-size: 0.82rem; color: var(--gray); min-width: 60px; }
+  .item-urgency { font-size: 0.75rem; }
+
+  /* ── STATS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--white); border-radius: 10px; padding: 18px 20px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07); text-align: center;
+    border-top: 4px solid var(--teal);
+  }
+  .stat-card.s-success { border-top-color: var(--success); }
+  .stat-card.s-warning { border-top-color: #f57c00; }
+  .stat-card.s-danger { border-top-color: var(--danger); }
+  .stat-card.s-pending { border-top-color: var(--pending); }
+  .stat-number { font-size: 2.2rem; font-weight: 800; color: var(--teal-dark); line-height: 1; }
+  .stat-card.s-success .stat-number { color: var(--success); }
+  .stat-card.s-warning .stat-number { color: #e65100; }
+  .stat-card.s-danger .stat-number { color: var(--danger); }
+  .stat-card.s-pending .stat-number { color: var(--pending); }
+  .stat-label { font-size: 0.8rem; color: var(--gray); margin-top: 6px; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--white); font-size: 0.82rem; cursor: pointer; color: var(--gray);
+    font-weight: 500; transition: all 0.15s;
+  }
+  .filter-chip:hover { border-color: var(--teal); color: var(--teal); }
+  .filter-chip.active { background: var(--teal); color: var(--white); border-color: var(--teal); }
+
+  /* ── TOP ITEMS TABLE ── */
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  .rank-table th { background: #f0f4f8; padding: 8px 12px; text-align: left; font-weight: 700; color: var(--gray); }
+  .rank-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+  .rank-num { font-weight: 800; color: var(--teal); width: 32px; }
+  .bar-wrap { background: #e8f5e9; border-radius: 4px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--success); border-radius: 4px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px; background: var(--teal-dark);
+    color: var(--white); padding: 13px 22px; border-radius: 8px; font-size: 0.9rem;
+    font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 999;
+    display: none; align-items: center; gap: 10px; max-width: 340px;
+  }
+  .toast.show { display: flex; animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--gray); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.95rem; }
+
+  /* ── ROLE BANNER ── */
+  .role-selector {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px;
+  }
+  .role-btn {
+    flex: 1; min-width: 140px; padding: 16px 12px; border-radius: 10px;
+    border: 2px solid var(--border); background: var(--white); cursor: pointer;
+    text-align: center; transition: all 0.18s; font-family: inherit;
+  }
+  .role-btn:hover { border-color: var(--teal); box-shadow: 0 2px 10px rgba(10,125,160,0.1); }
+  .role-btn.selected { border-color: var(--teal); background: var(--teal-light); }
+  .role-btn .role-icon { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+  .role-btn .role-name { font-weight: 700; font-size: 0.88rem; color: var(--teal-dark); }
+  .role-btn .role-desc { font-size: 0.75rem; color: var(--gray); margin-top: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .tabs { padding: 0 8px; }
+    .tab-btn { padding: 12px 10px; font-size: 0.82rem; }
+    .main { padding: 16px 10px 50px; }
+    .card { padding: 16px; }
+    .modal { width: 96%; }
+  }
+
+  /* ── WEEK LABEL ── */
+  .week-label {
+    display: inline-block; background: var(--teal-light); color: var(--teal-dark);
+    border-radius: 6px; padding: 4px 12px; font-size: 0.82rem; font-weight: 700;
+    margin-left: 8px;
+  }
+  .section-title { font-size: 0.9rem; font-weight: 700; color: var(--gray); margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .compras-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .compras-row:last-child { border-bottom: none; }
+
+  details summary { cursor: pointer; font-weight: 600; color: var(--teal-dark); padding: 6px 0; }
+  details[open] summary { margin-bottom: 10px; }
+
+  /* ── LOGIN ── */
+  .login-overlay {
+    position: fixed; inset: 0; background: linear-gradient(135deg, #3D6B40 0%, #5E9B61 60%, #7AB87D 100%);
+    z-index: 1000; display: flex; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    background: white; border-radius: 18px; padding: 40px 44px; width: 100%; max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeIn 0.35s ease;
+    margin: 16px;
+  }
+  .login-logo { text-align: center; margin-bottom: 28px; }
+  .login-logo .logo-icon {
+    width: 64px; height: 64px; background: var(--teal); border-radius: 16px;
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+  .login-logo .logo-icon svg { width: 36px; height: 36px; }
+  .login-logo h2 { font-size: 1.6rem; font-weight: 800; color: var(--teal-dark); letter-spacing: 1px; margin: 0; }
+  .login-logo p { font-size: 0.85rem; color: var(--gray); margin-top: 4px; }
+
+  .role-cards { display: flex; gap: 10px; margin-bottom: 22px; }
+  .role-card {
+    flex: 1; padding: 12px 8px; border-radius: 10px; border: 2px solid var(--border);
+    background: var(--gray-light); cursor: pointer; text-align: center;
+    transition: all 0.18s; font-family: inherit;
+  }
+  .role-card:hover { border-color: var(--teal); background: var(--teal-light); }
+  .role-card.selected { border-color: var(--teal); background: var(--teal-light); box-shadow: 0 0 0 3px rgba(10,125,160,0.15); }
+  .role-card .rc-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+  .role-card .rc-label { font-size: 0.78rem; font-weight: 700; color: var(--teal-dark); }
+
+  .login-field { margin-bottom: 14px; }
+  .login-field label { font-size: 0.82rem; font-weight: 600; color: var(--gray); display: block; margin-bottom: 5px; }
+  .login-field select, .login-field input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.95rem; font-family: inherit; background: #fafafa; transition: border-color 0.2s;
+  }
+  .login-field select:focus, .login-field input:focus { outline: none; border-color: var(--teal); background: white; }
+  .login-field input[type="password"] { letter-spacing: 2px; }
+
+  .login-btn {
+    width: 100%; padding: 13px; background: var(--teal); color: white; border: none;
+    border-radius: 9px; font-size: 1rem; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: background 0.18s, transform 0.1s; margin-top: 6px;
+  }
+  .login-btn:hover { background: var(--teal-dark); }
+  .login-btn:active { transform: scale(0.98); }
+  .login-error {
+    background: var(--danger-light); color: var(--danger); border-radius: 7px;
+    padding: 9px 14px; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;
+    display: none; text-align: center;
+  }
+  .login-error.show { display: block; }
+
+  /* ── USER CHIP en header ── */
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600;
+  }
+  .user-chip .logout-btn {
+    background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 12px;
+    padding: 3px 10px; font-size: 0.75rem; cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+  .user-chip .logout-btn:hover { background: rgba(255,255,255,0.35); }
+
+  /* ── ALERTAS ── */
+  .alert-banner {
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 14px;
+    display: flex; align-items: flex-start; gap: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .alert-banner .alert-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+  .alert-banner .alert-body { flex: 1; }
+  .alert-banner .alert-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 3px; }
+  .alert-banner .alert-desc { font-size: 0.83rem; line-height: 1.5; }
+  .alert-danger { background: var(--danger-light); border: 1.5px solid #ef9a9a; color: var(--danger); }
+  .alert-warning { background: var(--warning-light); border: 1.5px solid #ffcc80; color: #b34700; }
+  .alert-info { background: var(--info-light); border: 1.5px solid #90caf9; color: var(--info); }
+  .alert-success { background: var(--success-light); border: 1.5px solid #a5d6a7; color: var(--success); }
+
+  /* ── INVENTARIO TABLE ── */
+  .inv-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  .inv-table th { background: var(--teal-light); color: var(--teal-dark); font-weight: 700; padding: 10px 12px; text-align: left; white-space: nowrap; }
+  .inv-table td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .inv-table tr:hover td { background: #fafcfd; }
+  .inv-table tr.bajo-stock td { background: #fff8f8; }
+  .inv-table tr.critico td { background: #fff0f0; }
+  .stock-bar-wrap { background: #eee; border-radius: 4px; height: 7px; width: 80px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .stock-bar { height: 100%; border-radius: 4px; }
+  .stock-ok { background: var(--success); }
+  .stock-low { background: #f57c00; }
+  .stock-critical { background: var(--danger); }
+  .qty-ctrl { display: inline-flex; align-items: center; gap: 4px; }
+  .qty-ctrl button { width: 26px; height: 26px; border: 1px solid var(--border); background: var(--white); border-radius: 4px; cursor: pointer; font-size: 1rem; line-height: 1; font-weight: 700; color: var(--teal); }
+  .qty-ctrl button:hover { background: var(--teal-light); }
+  .qty-val { min-width: 36px; text-align: center; font-weight: 700; font-size: 0.92rem; }
+
+  /* ── PEDIDO MENSUAL ── */
+  .pedido-card {
+    border: 2px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .pedido-card.borrador  { border-color: #90a4ae; background: #f5f7fa; }
+  .pedido-card.aprobado  { border-color: var(--success); background: var(--success-light); }
+  .pedido-card.rechazado { border-color: var(--danger); background: var(--danger-light); }
+  .pedido-card.pendiente { border-color: #f57c00; background: var(--warning-light); }
+  .pedido-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .obs-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; font-family: inherit; margin-top: 6px; }
+
+  /* ── INV FORM ── */
+  .inv-form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: flex-end; }
+  .inv-form-row .form-group { flex: 1; min-width: 120px; }
+  .inv-form-row input, .inv-form-row select {
+    padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+    font-size: 0.85rem; width: 100%; font-family: inherit; background: #fafafa;
+  }
+  .inv-form-row input:focus, .inv-form-row select:focus { outline: none; border-color: var(--teal); background: var(--white); }
+  .inv-form-row label { font-size: 0.78rem; font-weight: 600; color: var(--gray); display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN OVERLAY ══════════ -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M9 20 L16 8 L23 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="23" r="2" fill="white"/>
+        </svg>
+      </div>
+      <h2>MONTEVERDE</h2>
+      <p>Gestión de Insumos — Clínica Monte Verde</p>
+    </div>
+
+    <!-- Selección de rol -->
+    <div style="font-size:0.82rem; font-weight:700; color:var(--gray); margin-bottom:10px;">¿Quién eres?</div>
+    <div class="role-cards">
+      <button class="role-card" id="rc-asistente" onclick="seleccionarRol('asistente')">
+        <span class="rc-icon">🦷</span>
+        <span class="rc-label">Asistente</span>
+      </button>
+      <button class="role-card" id="rc-bodega" onclick="seleccionarRol('bodega')">
+        <span class="rc-icon">📦</span>
+        <span class="rc-label">Bodega</span>
+      </button>
+      <button class="role-card" id="rc-admin" onclick="seleccionarRol('admin')">
+        <span class="rc-icon">🏛️</span>
+        <span class="rc-label">Administración</span>
+      </button>
+    </div>
+
+    <!-- Nombre (solo asistentes) -->
+    <div class="login-field" id="field-nombre" style="display:none;">
+      <label>Tu nombre</label>
+      <select id="login-nombre">
+        <option value="">— Selecciona tu nombre —</option>
+        <option>Katherine</option>
+        <option>Stefano</option>
+        <option>Ivan</option>
+        <option>Angi</option>
+        <option>Nicole</option>
+      </select>
+    </div>
+
+    <!-- Contraseña -->
+    <div class="login-field" id="field-pass" style="display:none;">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+
+    <!-- Error -->
+    <div class="login-error" id="login-error">Contraseña incorrecta. Intenta de nuevo.</div>
+
+    <!-- Botón -->
+    <button class="login-btn" id="login-btn" onclick="doLogin()" style="display:none;">Ingresar →</button>
+
+    <div style="text-align:center; margin-top:18px; font-size:0.75rem; color:#bbb;">Clínica Monte Verde · Uso interno</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="15" fill="rgba(255,255,255,0.15)"/>
+      <path d="M9 20 L16 8 L23 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="16" cy="23" r="2" fill="white"/>
+    </svg>
+    <div>
+      <h1>MONTEVERDE</h1>
+      <div class="subtitle">Gestión de Insumos Dentales</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <div class="header-right" id="weekDisplay"></div>
+    <div class="user-chip" id="user-chip" style="display:none;">
+      <span id="user-chip-label">—</span>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('solicitud')" id="tab-solicitud">
+    <span class="tab-icon">📋</span> Nueva Solicitud
+  </button>
+  <button class="tab-btn" onclick="showTab('bodega')" id="tab-bodega">
+    <span class="tab-icon">📦</span> Bodega
+  </button>
+  <button class="tab-btn" onclick="showTab('admin')" id="tab-admin">
+    <span class="tab-icon">🏛️</span> Administración
+  </button>
+  <button class="tab-btn" onclick="showTab('dashboard')" id="tab-dashboard">
+    <span class="tab-icon">📊</span> Dashboard
+  </button>
+  <button class="tab-btn" onclick="showTab('inventario')" id="tab-inventario">
+    <span class="tab-icon">🗄️</span> Inventario
+    <span id="alert-badge" style="display:none; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:0.7rem; font-weight:800; align-items:center; justify-content:center;">!</span>
+  </button>
+</div>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════
+       PANEL 1 — NUEVA SOLICITUD
+  ══════════════════════════════════════════ -->
+  <div class="panel active" id="panel-solicitud">
+    <div class="card">
+      <div class="card-title">📋 Solicitud de Insumos</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Box solicitante</label>
+          <select id="sel-box">
+            <option value="">— Selecciona tu box —</option>
+            <option>Box 1</option><option>Box 2</option><option>Box 3</option>
+            <option>Box 4</option><option>Box 5</option><option>Box 6</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Asistente</label>
+          <select id="sel-asistente">
+            <option value="">— Selecciona tu nombre —</option>
+            <option>Katherine</option>
+            <option>Stefano</option>
+            <option>Ivan</option>
+            <option>Angi</option>
+            <option>Javiera</option>
+            <option>Nicole</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Plantilla predeterminada -->
+      <div style="background: var(--teal-light); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <span style="font-weight: 700; color: var(--teal-dark); font-size: 0.88rem;">⚡ Plantilla de insumos frecuentes</span>
+          <span style="font-size: 0.8rem; color: var(--gray); margin-left: 8px;">Carga los insumos base de uso semanal</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-outline" style="font-size: 0.82rem; padding: 7px 14px;" onclick="cargarPlantilla('completa')">📋 Cargar plantilla completa</button>
+          <button class="btn btn-ghost" style="font-size: 0.8rem;" onclick="limpiarFormulario()">🗑 Limpiar</button>
+        </div>
+      </div>
+
+      <div class="section-title">Lista de insumos solicitados</div>
+      <table class="insumos-table" id="insumos-table">
+        <thead>
+          <tr>
+            <th>Insumo / Producto</th>
+            <th>Cantidad</th>
+            <th>Unidad</th>
+            <th>Urgencia</th>
+            <th>Obs.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="insumos-body">
+        </tbody>
+      </table>
+
+      <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <button class="btn btn-outline" onclick="addInsumoRow()">+ Agregar insumo</button>
+        <button class="btn btn-primary" onclick="crearTicket()" style="margin-left: auto;">
+          ✓ Registrar solicitud
+        </button>
+      </div>
+    </div>
+
+    <!-- Tickets del box activo -->
+    <div class="card" id="box-tickets-section" style="display:none;">
+      <div class="card-title" id="box-tickets-title">Mis tickets activos</div>
+      <div id="box-tickets-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 2 — BODEGA (JAVIERA)
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-bodega">
+    <div class="card">
+      <div class="card-title">📦 Revisión de Stock — Bodega</div>
+      <p style="font-size:0.9rem; color:var(--gray); margin-bottom:18px;">
+        Revisa cada ítem solicitado esta semana y marca su disponibilidad en bodega.
+      </p>
+
+      <div id="bodega-tickets-container">
+        <div class="empty-state"><div class="icon">📭</div><p>No hay tickets abiertos esta semana.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 3 — ADMINISTRACIÓN
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-admin">
+    <div class="card">
+      <div class="card-title">🏛️ Administración — Sayen
+        <span style="margin-left: auto; font-size: 0.78rem; font-weight: 400; color: var(--gray); background: var(--gray-light); padding: 4px 10px; border-radius: 6px;">Acceso total</span>
+      </div>
+
+      <!-- Resumen rápido admin -->
+      <div id="admin-resumen-rapido" style="margin-bottom: 18px;"></div>
+
+      <!-- Pedidos mensuales de Javiera esperando autorización -->
+      <div class="section-title">📋 Pedidos mensuales de bodega — pendientes de autorización</div>
+      <div id="admin-pedidos-mensuales">
+        <div class="empty-state" style="padding:24px;"><div class="icon" style="font-size:2rem;">📭</div><p>No hay pedidos mensuales pendientes.</p></div>
+      </div>
+
+      <!-- Órdenes de compra -->
+      <div class="section-title">Órdenes de compra pendientes</div>
+      <div id="compras-container">
+        <div class="empty-state"><div class="icon">✅</div><p>No hay órdenes de compra pendientes.</p></div>
+      </div>
+
+      <!-- Despachos pendientes de confirmar -->
+      <div class="section-title" style="margin-top: 28px;">Tickets despachados — pendientes de confirmación</div>
+      <div id="despachos-container">
+        <div class="empty-state"><div class="icon">📬</div><p>No hay despachos pendientes de confirmación.</p></div>
+      </div>
+
+      <!-- Todos los tickets — gestión total -->
+      <div class="section-title" style="margin-top: 28px;">Gestión completa de tickets</div>
+      <div id="admin-todos-tickets"></div>
+    </div>
+
+    <!-- Reporte semanal -->
+    <div class="card">
+      <div class="card-title">📊 Reporte Semanal</div>
+      <div id="reporte-semanal"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 4 — DASHBOARD
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-dashboard">
+    <!-- Vista asistente (personal) -->
+    <div id="dash-asistente" style="display:none;"></div>
+
+    <!-- Vista general (Javiera / Sayen) -->
+    <div id="dash-general">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="filters" id="filtros-status">
+        <span style="font-size:0.82rem; font-weight:700; color:var(--gray);">Estado:</span>
+      </div>
+      <div class="filters" id="filtros-box">
+        <span style="font-size:0.82rem; font-weight:700; color:var(--gray);">Box:</span>
+      </div>
+      <div class="ticket-grid" id="ticket-grid-container"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 5 — INVENTARIO
+  ══════════════════════════════════════════ -->
+  <div class="panel" id="panel-inventario">
+
+    <!-- Alertas automáticas -->
+    <div id="inv-alertas"></div>
+
+    <!-- Alerta pedido mensual -->
+    <div id="inv-alerta-mensual"></div>
+
+    <!-- Stats inventario -->
+    <div class="stats-grid" id="inv-stats"></div>
+
+    <!-- Tabs internos inventario -->
+    <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+      <button class="filter-chip active" id="itab-stock" onclick="switchInvTab('stock')">📦 Stock actual</button>
+      <button class="filter-chip" id="itab-pedido" onclick="switchInvTab('pedido')">📋 Pedido mensual</button>
+      <button class="filter-chip" id="itab-agregar" onclick="switchInvTab('agregar')">➕ Agregar insumo</button>
+    </div>
+
+    <!-- SUB-PANEL: Stock actual -->
+    <div id="inv-panel-stock">
+      <div class="card">
+        <div class="card-title">🗄️ Stock de Bodega
+          <div style="margin-left:auto; display:flex; gap:8px;">
+            <select id="inv-filtro-cat" onchange="renderInventario()" style="padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.82rem;">
+              <option value="">Todas las categorías</option>
+              <option>Adhesivos</option>
+              <option>Anestesia</option>
+              <option>Cementos</option>
+              <option>Composite / Resinas</option>
+              <option>Descartables</option>
+              <option>Desinfección</option>
+              <option>Endodoncia</option>
+              <option>Instrumental</option>
+              <option>Material de impresión</option>
+              <option>Protección personal</option>
+              <option>Sellantes</option>
+              <option>Suturas</option>
+              <option>Otros</option>
+            </select>
+            <select id="inv-filtro-estado" onchange="renderInventario()" style="padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.82rem;">
+              <option value="">Todo el stock</option>
+              <option value="critico">Solo críticos</option>
+              <option value="bajo">Bajo stock</option>
+              <option value="ok">Stock OK</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="inv-table" id="inv-tabla">
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th>Categoría</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Unidad</th>
+                <th>Estado</th>
+                <th>Ajustar stock</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="inv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-PANEL: Pedido mensual -->
+    <div id="inv-panel-pedido" style="display:none;">
+      <div class="card">
+        <div class="card-title">📋 Pedido Mensual
+          <span style="margin-left:8px; font-size:0.78rem; font-weight:400; color:var(--gray);">Flujo: Javiera → Sayen (autorización) → Cotización</span>
+        </div>
+        <div id="pedidos-mensuales-container"></div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" onclick="crearPedidoMensual()">📋 Generar pedido mensual desde stock bajo</button>
+          <button class="btn btn-outline" onclick="crearPedidoManual()" style="margin-left:10px;">✏️ Pedido manual</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUB-PANEL: Agregar insumo -->
+    <div id="inv-panel-agregar" style="display:none;">
+      <div class="card">
+        <div class="card-title">➕ Agregar nuevo insumo al inventario</div>
+
+        <!-- Catálogo de sugerencias -->
+        <datalist id="catalogo-insumos"></datalist>
+
+        <div class="inv-form-row">
+          <div class="form-group">
+            <label>Nombre del insumo <span style="font-weight:400; color:var(--teal);">— escribe para ver sugerencias</span></label>
+            <div style="position:relative;">
+              <input type="text" id="new-nombre" list="catalogo-insumos" placeholder="Ej: Guantes nitrilo S, Flow A2…" autocomplete="off" oninput="sincronizarCatalogo()">
+            </div>
+          </div>
+          <div class="form-group"><label>Categoría</label>
+            <select id="new-cat">
+              <option>Adhesivos</option>
+              <option>Anestesia</option>
+              <option>Cementos</option>
+              <option>Composite / Resinas</option>
+              <option>Descartables</option>
+              <option>Desinfección</option>
+              <option>Endodoncia</option>
+              <option>Instrumental</option>
+              <option>Material de impresión</option>
+              <option>Protección personal</option>
+              <option>Sellantes</option>
+              <option>Suturas</option>
+              <option>Otros</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Unidad</label>
+            <select id="new-unidad">
+              <option>Caja</option><option>Unidad</option><option>Frasco</option>
+              <option>Bolsa</option><option>Rollo</option><option>Paquete</option><option>Jeringa</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Stock actual</label><input type="number" id="new-stock" min="0" value="0"></div>
+          <div class="form-group"><label>Stock mínimo</label><input type="number" id="new-min" min="0" value="2"></div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="agregarInsumo()" style="white-space:nowrap;">✓ Agregar</button>
+          </div>
+        </div>
+        <hr style="margin: 20px 0; border-color: #eee;">
+        <div class="card-title" style="font-size:0.9rem; margin-bottom:12px;">Insumos registrados — editar stock mínimo</div>
+        <div id="inv-editar-lista"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /main -->
+
+<!-- ══════════════ MODAL DETALLE TICKET ══════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Detalle de Ticket</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  FIREBASE — Reemplaza con tu configuración real
+//  (console.firebase.google.com → tu proyecto → </> Agregar app web)
+// ═══════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAS9QSaY6x8ynCqeZBuColelwCZlNToXg0",
+  authDomain:        "clinica-monte-verde.firebaseapp.com",
+  databaseURL:       "https://clinica-monte-verde-default-rtdb.firebaseio.com",
+  projectId:         "clinica-monte-verde",
+  storageBucket:     "clinica-monte-verde.firebasestorage.app",
+  messagingSenderId: "764106099129",
+  appId:             "1:764106099129:web:ab035a1f9cbfa5b9134e68",
+  measurementId:     "G-3JXG94DTCC"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database();
+let _fbReady = false;
+
+// Convierte lo que Firebase retorna (puede ser objeto con claves numéricas) a array
+function snapToArr(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(x => x != null);
+  return Object.values(val).filter(x => x != null);
+}
+
+// Guarda todo el estado en Firebase — otros clientes reciben el update al instante
+function saveState() {
+  if (!_fbReady) return;
+  db.ref('mv').set({
+    tickets,
+    inventario,
+    pedidosMensuales,
+    ticketCounter,
+    invIdCounter,
+  }).catch(e => console.warn('Firebase write:', e));
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let tickets = [];
+let ticketCounter = {};
+let activeFilters = { status: 'TODOS', box: 'TODOS' };
+
+const ESTADOS = {
+  ABIERTO: { label: 'Abierto', cls: 'badge-abierto' },
+  REVISION: { label: 'En revisión', cls: 'badge-revision' },
+  PARCIAL: { label: 'Parcial', cls: 'badge-parcial' },
+  ENTREGADO: { label: 'Entregado', cls: 'badge-entregado' },
+  PENDIENTE: { label: 'Pendiente', cls: 'badge-pendiente' },
+  CANCELADO: { label: 'Cancelado', cls: 'badge-cancelado' },
+};
+
+const ITEM_ESTADOS = {
+  PENDIENTE: { label: 'Pendiente', cls: 'badge-abierto' },
+  DISPONIBLE: { label: 'Disponible', cls: 'badge-disponible' },
+  PARCIAL: { label: 'Parcial', cls: 'badge-parcial' },
+  SIN_STOCK: { label: 'Sin stock', cls: 'badge-sinstock' },
+};
+
+// (Sin datos de demo — sistema limpio)
+
+// ═══════════════════════════════════════════════
+//  SEMANA
+// ═══════════════════════════════════════════════
+function getWeekLabel() {
+  const d = new Date();
+  const start = new Date(d);
+  start.setDate(d.getDate() - d.getDay() + 1);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 4);
+  const fmt = x => x.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
+  return `Semana ${fmt(start)} – ${fmt(end)}, ${d.getFullYear()}`;
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function showTab(tab) {
+  // Verificar permisos si hay sesión activa
+  if (currentRol && !PERMISOS[currentRol].tabs.includes(tab)) return;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'bodega') renderBodega();
+  if (tab === 'admin') renderAdmin();
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'inventario') renderInventarioPanel();
+}
+
+// ═══════════════════════════════════════════════
+//  SOLICITUD
+// ═══════════════════════════════════════════════
+// Construye las opciones del select de insumos desde inventario + catálogo
+function buildInsumoOptions(selectedNombre) {
+  const unidades = ['Caja','Unidad','Frasco','Bolsa','Rollo','Paquete','Jeringa'];
+  let html = '<option value="">— Seleccionar insumo —</option>';
+  html += '<optgroup label="📦 En inventario (stock controlado)">';
+  inventario.forEach(i => {
+    const sel = i.nombre === selectedNombre ? 'selected' : '';
+    const stockInfo = i.stock > 0 ? ` · ${i.stock} ${i.unidad} disp.` : ' · SIN STOCK';
+    html += `<option value="${i.nombre}" data-unidad="${i.unidad}" ${sel}>${i.nombre}${stockInfo}</option>`;
+  });
+  html += '</optgroup>';
+  // Catálogo extra (no en inventario)
+  const invNombres = inventario.map(x => x.nombre);
+  const extras = CATALOGO_BASE.filter(n => !invNombres.includes(n));
+  if (extras.length) {
+    html += '<optgroup label="📋 Catálogo">';
+    extras.forEach(n => {
+      html += `<option value="${n}" ${n === selectedNombre ? 'selected' : ''}>${n}</option>`;
+    });
+    html += '</optgroup>';
+  }
+  return html;
+}
+
+function onInsumoChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const unidad = opt?.dataset?.unidad;
+  if (unidad) {
+    // Auto-rellenar unidad en el select de la misma fila
+    const row = sel.closest('tr');
+    const unidadSel = row.querySelectorAll('select')[1];
+    if (unidadSel) {
+      for (let o of unidadSel.options) { if (o.value === unidad) { o.selected = true; break; } }
+    }
+  }
+}
+
+function addInsumoRow(nombre = '', cantidad = 1, unidad = 'Unidad', urgente = false, obs = '') {
+  const tbody = document.getElementById('insumos-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <select onchange="onInsumoChange(this)" style="width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.84rem;">
+        ${buildInsumoOptions(nombre)}
+      </select>
+    </td>
+    <td><input type="number" min="1" value="${cantidad}" style="width:70px; padding:5px 6px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;"></td>
+    <td><select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;">
+      <option ${unidad==='Caja'?'selected':''}>Caja</option>
+      <option ${unidad==='Unidad'?'selected':''}>Unidad</option>
+      <option ${unidad==='Frasco'?'selected':''}>Frasco</option>
+      <option ${unidad==='Bolsa'?'selected':''}>Bolsa</option>
+      <option ${unidad==='Rollo'?'selected':''}>Rollo</option>
+      <option ${unidad==='Paquete'?'selected':''}>Paquete</option>
+      <option ${unidad==='Jeringa'?'selected':''}>Jeringa</option>
+    </select></td>
+    <td style="text-align:center;">
+      <input type="checkbox" ${urgente ? 'checked' : ''} title="Urgente" style="width:18px;height:18px;cursor:pointer;">
+    </td>
+    <td><input type="text" placeholder="Observación opcional" value="${obs}" style="width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;"></td>
+    <td><button class="remove-btn" onclick="this.closest('tr').remove()" title="Eliminar">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ─── PLANTILLA ───
+const PLANTILLA_INSUMOS = [
+  ['Guantes nitrilo S', 2, 'Caja', false, ''],
+  ['Guantes nitrilo M', 2, 'Caja', false, ''],
+  ['Mascarillas triple capa', 2, 'Caja', false, ''],
+  ['Baberos desechables', 1, 'Paquete', false, ''],
+  ['Eyectores de saliva', 1, 'Bolsa', false, ''],
+  ['Puntas de succión', 1, 'Bolsa', false, ''],
+  ['Rollos algodón', 1, 'Paquete', false, ''],
+  ['Algodón dental', 1, 'Rollo', false, ''],
+  ['Papel articular azul', 1, 'Caja', false, ''],
+  ['Hilo dental seda', 1, 'Unidad', false, ''],
+];
+
+function cargarPlantilla() {
+  document.getElementById('insumos-body').innerHTML = '';
+  PLANTILLA_INSUMOS.forEach(([n, c, u, urg, obs]) => addInsumoRow(n, c, u, urg, obs));
+  showToast('📋 Plantilla cargada — revisa y ajusta cantidades');
+}
+
+function limpiarFormulario() {
+  document.getElementById('insumos-body').innerHTML = '';
+  addInsumoRow();
+}
+
+function crearTicket() {
+  const box = document.getElementById('sel-box').value;
+  const asistente = document.getElementById('sel-asistente').value;
+  if (!box) { showToast('⚠️ Selecciona tu box'); return; }
+  if (!asistente) { showToast('⚠️ Selecciona tu nombre'); return; }
+
+  const rows = document.querySelectorAll('#insumos-body tr');
+  if (rows.length === 0) { showToast('⚠️ Agrega al menos un insumo'); return; }
+
+  const items = [];
+  for (const row of rows) {
+    const selects = row.querySelectorAll('select');
+    const inputs  = row.querySelectorAll('input');
+    const nombre = selects[0].value; // select de insumo
+    if (!nombre) { showToast('⚠️ Selecciona un insumo del listado en todas las filas'); return; }
+    items.push({
+      nombre,
+      cantidad: parseInt(inputs[0].value) || 1, // input number
+      unidad: selects[1].value,                  // select unidad
+      urgente: inputs[1].checked,                // checkbox urgente
+      obs: inputs[2]?.value.trim() || '',        // input obs
+      estado: 'PENDIENTE'
+    });
+  }
+
+  const boxNum = box.replace('Box ', '');
+  const yr = new Date().getFullYear();
+  const key = `${yr}-${boxNum}`;
+  ticketCounter[key] = (ticketCounter[key] || 0) + 1;
+  const code = `SEM-${yr}-BOX${boxNum}-${String(ticketCounter[key]).padStart(3,'0')}`;
+
+  // Verificar si está dentro del plazo: lunes antes de las 14:00
+  const ahora = new Date();
+  const esLunes = ahora.getDay() === 1;
+  const anteDe14 = ahora.getHours() < 14;
+  const enPlazo = esLunes && anteDe14;
+
+  tickets.push({
+    id: Date.now(),
+    code, box, asistente,
+    estado: 'ABIERTO',
+    fecha: ahora.toISOString(),
+    fueraDePlazo: !enPlazo,
+    progreso: null,
+    items,
+    despachadoPor: null,
+    despachado: false,
+  });
+
+  saveState();
+  if (!enPlazo) {
+    showToast(`⚠️ Ticket ${code} registrado FUERA DE PLAZO — las solicitudes deben enviarse el lunes antes de las 14:00 hrs`);
+  } else {
+    showToast(`✅ Ticket ${code} registrado — revisa el estado en Dashboard`);
+  }
+  document.getElementById('insumos-body').innerHTML = '';
+  document.getElementById('sel-box').value = '';
+  if (currentRol !== 'asistente') document.getElementById('sel-asistente').value = '';
+  if (currentRol !== 'asistente') renderBoxTickets(box);
+  else document.getElementById('box-tickets-section').style.display = 'none';
+}
+
+function renderBoxTickets(box) {
+  const section = document.getElementById('box-tickets-section');
+  const list = document.getElementById('box-tickets-list');
+  const boxTickets = tickets.filter(t => t.box === box);
+  if (boxTickets.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('box-tickets-title').textContent = `Mis tickets — ${box}`;
+  list.innerHTML = boxTickets.slice(-4).reverse().map(t => `
+    <div class="ticket-card status-${t.estado.toLowerCase()}" onclick="openModal(${t.id})" style="margin-bottom:10px;">
+      <div class="ticket-header">
+        <span class="ticket-code">${t.code}</span>
+        <span class="badge ${ESTADOS[t.estado]?.cls}">${ESTADOS[t.estado]?.label}</span>
+      </div>
+      <div class="ticket-items">${t.items.map(i => `• ${i.nombre} ×${i.cantidad} ${i.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : ''}`).join('<br>')}</div>
+      <div class="ticket-footer">
+        <span>${formatDate(t.fecha)}</span>
+        <span>${t.items.length} ítem(s)</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  BODEGA
+// ═══════════════════════════════════════════════
+function renderBodega() {
+  const container = document.getElementById('bodega-tickets-container');
+  const open = tickets.filter(t => ['ABIERTO','REVISION','PARCIAL'].includes(t.estado));
+  if (open.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No hay tickets pendientes de revisión.</p></div>';
+    return;
+  }
+  container.innerHTML = open.map(t => renderBodegaCard(t)).join('');
+}
+
+function renderBodegaCard(t) {
+  const revisado = t.progreso && t.progreso !== null;
+  const aprobado = ['APROBADO','ENTREGA_COMPLETA','ENTREGA_PARCIAL','LISTO'].includes(t.progreso);
+  const listo    = ['ENTREGA_COMPLETA','ENTREGA_PARCIAL','LISTO'].includes(t.progreso);
+
+  // Alerta fuera de plazo
+  const alertaPlazo = t.fueraDePlazo ? `
+    <div class="alert-banner alert-warning" style="margin-bottom:12px;">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-body">
+        <div class="alert-title">Pedido fuera de plazo</div>
+        <div class="alert-desc">Esta solicitud fue enviada fuera del horario (lunes antes de las 14:00 hrs). Se puede procesar igualmente o devolver con observación.</div>
+      </div>
+    </div>` : '';
+
+  return `
+    <details style="margin-bottom:14px; background:#fafcfd; border:1px solid #e0f0f8; border-radius:10px; overflow:hidden;">
+      <summary style="padding:14px 18px; background:var(--teal-light); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span style="font-size:0.78rem; font-family:monospace; color:var(--gray);">${t.code}</span>
+        <strong>${t.box}</strong> — ${t.asistente}
+        <span class="badge ${ESTADOS[t.estado]?.cls}">${ESTADOS[t.estado]?.label}</span>
+        ${t.fueraDePlazo ? '<span class="badge badge-urgente">⏰ Fuera de plazo</span>' : ''}
+        ${t.progreso === 'LISTO' || t.progreso === 'ENTREGA_COMPLETA' || t.progreso === 'ENTREGA_PARCIAL' ? '<span class="badge badge-disponible">🔔 Listo para retirar</span>' : ''}
+      </summary>
+      <div style="padding:16px 18px;">
+        ${alertaPlazo}
+
+        <!-- Ítems con disponibilidad -->
+        <div style="margin-bottom:14px;">
+          ${t.items.map((item, idx) => `
+            <div class="item-status-row" style="flex-wrap:wrap; gap:6px;">
+              <span class="item-name">${item.nombre}</span>
+              <span class="item-qty" style="white-space:nowrap;">Pedido: <strong>${item.cantidad}</strong> ${item.unidad}</span>
+              ${item.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : ''}
+              <select onchange="setItemEstado(${t.id}, ${idx}, this.value)" style="padding:5px 8px; border:1px solid #ddd; border-radius:5px; font-size:0.82rem;" ${listo ? 'disabled' : ''}>
+                <option value="PENDIENTE"   ${item.estado==='PENDIENTE'  ?'selected':''}>⏳ Pendiente</option>
+                <option value="DISPONIBLE"  ${item.estado==='DISPONIBLE' ?'selected':''}>✅ Disponible (todo)</option>
+                <option value="PARCIAL"     ${item.estado==='PARCIAL'    ?'selected':''}>⚡ Parcial</option>
+                <option value="SIN_STOCK"   ${item.estado==='SIN_STOCK'  ?'selected':''}>❌ Sin stock</option>
+              </select>
+              ${item.estado === 'PARCIAL' ? `
+                <div style="display:flex; align-items:center; gap:5px; background:#fff8e1; border:1px solid #ffcc80; border-radius:6px; padding:4px 8px;">
+                  <span style="font-size:0.78rem; color:#e65100; font-weight:600;">Cant. a entregar:</span>
+                  <input type="number" min="1" max="${item.cantidad - 1}" value="${item.cantParcial || 1}"
+                    style="width:56px; padding:3px 6px; border:1px solid #ffcc80; border-radius:4px; font-size:0.85rem; font-weight:700; color:#e65100;"
+                    ${listo ? 'disabled' : ''}
+                    onchange="setCantParcial(${t.id}, ${idx}, this.value)">
+                  <span style="font-size:0.78rem; color:#e65100;">de ${item.cantidad} ${item.unidad}</span>
+                </div>` : ''}
+            </div>`).join('')}
+        </div>
+
+        <!-- PASO 1: Marcar como revisado -->
+        ${!revisado ? `
+        <div style="margin-bottom:12px;">
+          <button class="btn btn-primary" onclick="setProgreso(${t.id},'REVISADO')" style="width:100%;">
+            🔍 Marcar como revisado
+          </button>
+        </div>` : ''}
+
+        <!-- PASO 2: Resultado de revisión (aparece tras marcar revisado) -->
+        ${revisado && !listo ? `
+        <div style="background:#f5f5f5; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+          <div style="font-size:0.82rem; font-weight:700; color:var(--gray); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.4px;">
+            🔍 Resultado de revisión
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+
+            <!-- OK: Entrega completa -->
+            <button onclick="entregarCompleto(${t.id})"
+              style="padding:12px; border-radius:8px; border:2px solid var(--success); background:var(--success-light); font-size:0.85rem; font-weight:700; color:var(--success); cursor:pointer; font-family:inherit; text-align:center;">
+              ✅ Entrega completa<br><span style="font-size:0.75rem; font-weight:400;">Todos los insumos disponibles</span>
+            </button>
+
+            <!-- OK parcial: Entrega parcial -->
+            <button onclick="entregarParcial(${t.id})"
+              style="padding:12px; border-radius:8px; border:2px solid #f57c00; background:#fff3e0; font-size:0.85rem; font-weight:700; color:#e65100; cursor:pointer; font-family:inherit; text-align:center;">
+              📦 Entrega parcial<br><span style="font-size:0.75rem; font-weight:400;">Entrega disponibles + escalar faltantes</span>
+            </button>
+          </div>
+
+          <!-- NO: Rechazar con observación obligatoria -->
+          <div style="border:1.5px solid var(--danger-light); border-radius:8px; padding:12px; background:white;">
+            <div style="font-size:0.82rem; font-weight:700; color:var(--danger); margin-bottom:6px;">✕ Rechazar pedido — observación obligatoria</div>
+            <textarea id="obs-rechazo-${t.id}" placeholder="Describe el motivo del rechazo (obligatorio)…" rows="2"
+              style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:6px; font-size:0.84rem; font-family:inherit; resize:vertical; margin-bottom:8px;"></textarea>
+            <button onclick="rechazarConObservacion(${t.id})" class="btn btn-danger" style="width:100%;">
+              ✕ Confirmar rechazo y devolver a asistente
+            </button>
+          </div>
+        </div>` : ''}
+
+        <!-- Estado final: listo -->
+        ${listo ? `
+        <div class="alert-banner ${t.progreso === 'ENTREGA_COMPLETA' ? 'alert-success' : 'alert-warning'}">
+          <div class="alert-icon">${t.progreso === 'ENTREGA_COMPLETA' ? '✅' : '📦'}</div>
+          <div class="alert-body">
+            <div class="alert-title">${t.progreso === 'ENTREGA_COMPLETA' ? 'Entrega completa — listo para retirar' : 'Entrega parcial — insumos faltantes escalados a Administración'}</div>
+            <div class="alert-desc">Esperando confirmación de recepción por parte de la asistente.</div>
+          </div>
+        </div>` : ''}
+      </div>
+    </details>
+  `;
+}
+
+function setItemEstado(ticketId, itemIdx, estado) {
+  const t = tickets.find(t => t.id === ticketId);
+  if (!t) return;
+  t.items[itemIdx].estado = estado;
+  if (estado === 'PARCIAL' && !t.items[itemIdx].cantParcial) {
+    t.items[itemIdx].cantParcial = Math.max(1, Math.floor(t.items[itemIdx].cantidad / 2));
+  }
+  actualizarEstadoTicket(t);
+  saveState();
+  renderBodega();
+}
+
+function setCantParcial(ticketId, itemIdx, val) {
+  const t = tickets.find(t => t.id === ticketId);
+  if (!t) return;
+  const item = t.items[itemIdx];
+  item.cantParcial = Math.min(item.cantidad - 1, Math.max(1, parseInt(val) || 1));
+  saveState();
+}
+
+function actualizarEstadoTicket(t) {
+  const estados = t.items.map(i => i.estado);
+  if (estados.every(e => e === 'PENDIENTE')) { t.estado = 'REVISION'; return; }
+  const hayPendiente = estados.some(e => e === 'PENDIENTE');
+  const haySinStock = estados.some(e => e === 'SIN_STOCK');
+  const hayParcial = estados.some(e => e === 'PARCIAL');
+  const hayDisponible = estados.some(e => e === 'DISPONIBLE');
+  if (!hayPendiente && (haySinStock || hayParcial)) t.estado = 'PARCIAL';
+  else if (!hayPendiente && hayDisponible) t.estado = 'REVISION';
+}
+
+function marcarRevision(id) {
+  const t = tickets.find(t => t.id === id);
+  if (t) {
+    t.estado = 'REVISION';
+    actualizarEstadoTicket(t);
+    showToast('📋 Ticket marcado como revisado');
+    renderBodega();
+  }
+}
+
+function setProgreso(id, paso) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  t.progreso = paso;
+  saveState();
+  renderBodega();
+}
+
+function aprobarTicketBodega(id) { setProgreso(id, 'REVISADO'); }
+
+function entregarCompleto(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  // Todos los ítems se marcan disponibles
+  t.items.forEach(i => { i.estado = 'DISPONIBLE'; });
+  t.progreso = 'ENTREGA_COMPLETA';
+  t.despachado = true;
+  t.despachadoPor = 'Javiera';
+  t.estado = 'PENDIENTE';
+  saveState();
+  showToast(`✅ Entrega completa registrada — ${t.code} listo para retirar`);
+  renderBodega();
+  renderDashboard();
+}
+
+function entregarParcial(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  const disponibles = t.items.filter(i => i.estado === 'DISPONIBLE' || i.estado === 'PARCIAL');
+  const faltantes   = t.items.filter(i => i.estado === 'SIN_STOCK' || i.estado === 'PENDIENTE');
+  if (disponibles.length === 0) {
+    showToast('⚠️ Marca al menos un ítem como disponible para entrega parcial');
+    return;
+  }
+  t.progreso = 'ENTREGA_PARCIAL';
+  t.despachado = true;
+  t.despachadoPor = 'Javiera';
+  t.estado = 'PARCIAL';
+  t.faltantesEscalados = faltantes.map(i => i.nombre);
+  saveState();
+  showToast(`📦 Entrega parcial — ${disponibles.length} entregados, ${faltantes.length} faltante(s) escalados a Administración`);
+  renderBodega();
+  renderDashboard();
+}
+
+function rechazarConObservacion(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  const obs = document.getElementById(`obs-rechazo-${id}`)?.value.trim();
+  if (!obs) {
+    showToast('⚠️ Debes escribir el motivo del rechazo antes de confirmar');
+    document.getElementById(`obs-rechazo-${id}`)?.focus();
+    return;
+  }
+  t.estado = 'ABIERTO';
+  t.progreso = 'RECHAZADO';
+  t.observacionRechazo = obs;
+  t.despachado = false;
+  saveState();
+  showToast(`✕ Pedido ${t.code} devuelto a ${t.asistente} con observación`);
+  renderBodega();
+  renderDashboard();
+}
+
+// Compatibilidad
+function rechazarTicketBodega(id) { rechazarConObservacion(id); }
+
+function marcarDespachado(id) {
+  // Ya no se usa directamente — se usa entregarCompleto / entregarParcial
+  entregarCompleto(id);
+}
+
+// ═══════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════
+function renderAdmin() {
+  renderAdminResumen();
+  renderAdminPedidosMensuales();
+  renderCompras();
+  renderDespachos();
+  renderTodosTicketsAdmin();
+  renderReporte();
+}
+
+function renderAdminResumen() {
+  const el = document.getElementById('admin-resumen-rapido');
+  const total = tickets.length;
+  const abiertos = tickets.filter(t => ['ABIERTO','REVISION'].includes(t.estado)).length;
+  const pendConf = tickets.filter(t => t.despachado && t.estado !== 'ENTREGADO' && t.estado !== 'CANCELADO').length;
+  const sinstock = tickets.flatMap(t => t.items).filter(i => i.estado === 'SIN_STOCK').length;
+  el.innerHTML = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <div style="background:var(--info-light); border-radius:8px; padding:10px 16px; flex:1; min-width:120px; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:var(--info);">${abiertos}</div>
+        <div style="font-size:0.78rem; color:var(--gray);">Tickets activos</div>
+      </div>
+      <div style="background:var(--warning-light); border-radius:8px; padding:10px 16px; flex:1; min-width:120px; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:var(--warning);">${pendConf}</div>
+        <div style="font-size:0.78rem; color:var(--gray);">Pend. confirmación</div>
+      </div>
+      <div style="background:var(--danger-light); border-radius:8px; padding:10px 16px; flex:1; min-width:120px; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:var(--danger);">${sinstock}</div>
+        <div style="font-size:0.78rem; color:var(--gray);">Ítems sin stock</div>
+      </div>
+      <div style="background:var(--success-light); border-radius:8px; padding:10px 16px; flex:1; min-width:120px; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:800; color:var(--success);">${total}</div>
+        <div style="font-size:0.78rem; color:var(--gray);">Total semana</div>
+      </div>
+    </div>`;
+}
+
+function renderCompras() {
+  const container = document.getElementById('compras-container');
+  const compras = [];
+  tickets.forEach(t => {
+    t.items.forEach((item, idx) => {
+      if (item.estado === 'SIN_STOCK' || (item.estado === 'PARCIAL' && item.urgente)) {
+        compras.push({ ticket: t, item, idx });
+      }
+    });
+  });
+  if (compras.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>No hay ítems sin stock esta semana.</p></div>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="rank-table">
+      <thead><tr><th>Ticket</th><th>Box</th><th>Insumo</th><th>Cant.</th><th>Urgencia</th><th>Acción</th></tr></thead>
+      <tbody>
+        ${compras.map(({ticket: t, item, idx}) => `
+          <tr>
+            <td><span style="font-family:monospace; font-size:0.78rem;">${t.code}</span></td>
+            <td>${t.box}</td>
+            <td>${item.nombre}</td>
+            <td>${item.cantidad} ${item.unidad}</td>
+            <td>${item.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : 'Normal'}</td>
+            <td style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn btn-success btn-sm" onclick="aprobarCompra(${t.id}, ${idx})">Aprobar</button>
+              <button class="btn btn-danger btn-sm" onclick="rechazarCompra(${t.id}, ${idx})">Rechazar</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function aprobarCompra(tid, idx) {
+  const t = tickets.find(t => t.id === tid);
+  if (t) {
+    t.items[idx].estado = 'DISPONIBLE';
+    t.items[idx].obs = (t.items[idx].obs ? t.items[idx].obs + ' | ' : '') + 'Compra aprobada por Admin';
+    actualizarEstadoTicket(t);
+    showToast('✅ Compra aprobada');
+    renderAdmin();
+  }
+}
+
+function rechazarCompra(tid, idx) {
+  const t = tickets.find(t => t.id === tid);
+  if (t) {
+    t.items[idx].estado = 'SIN_STOCK';
+    t.items[idx].obs = (t.items[idx].obs ? t.items[idx].obs + ' | ' : '') + 'Compra rechazada por Admin';
+    showToast('❌ Compra rechazada');
+    renderAdmin();
+  }
+}
+
+function renderDespachos() {
+  const container = document.getElementById('despachos-container');
+  const disp = tickets.filter(t => t.despachado && t.estado !== 'ENTREGADO' && t.estado !== 'CANCELADO');
+  if (disp.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📬</div><p>No hay despachos pendientes.</p></div>';
+    return;
+  }
+  container.innerHTML = disp.map(t => `
+    <div class="compras-row">
+      <div style="flex:1;">
+        <span style="font-family:monospace; font-size:0.8rem; color:var(--gray);">${t.code}</span>
+        &nbsp; <strong>${t.box}</strong> — ${t.asistente}
+        <div style="font-size:0.8rem; color:var(--gray); margin-top:2px;">${t.items.filter(i => i.estado === 'DISPONIBLE').map(i => i.nombre).join(', ')}</div>
+      </div>
+      <button class="btn btn-success btn-sm" onclick="confirmarEntrega(${t.id})">✓ Confirmar entrega</button>
+      <button class="btn btn-danger btn-sm" onclick="cancelarTicket(${t.id})">Cancelar</button>
+    </div>
+  `).join('');
+}
+
+function renderTodosTicketsAdmin() {
+  const el = document.getElementById('admin-todos-tickets');
+  const activos = tickets.filter(t => !['ENTREGADO','CANCELADO'].includes(t.estado));
+  const cerrados = tickets.filter(t => ['ENTREGADO','CANCELADO'].includes(t.estado));
+
+  const renderGroup = (list, title, bgColor) => {
+    if (list.length === 0) return '';
+    return `<div style="margin-bottom:12px;">
+      <div style="font-size:0.8rem; font-weight:700; color:var(--gray); margin-bottom:6px; text-transform:uppercase;">${title}</div>
+      ${list.map(t => `
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:${bgColor}; border-radius:8px; margin-bottom:6px; flex-wrap:wrap;">
+          <span style="font-family:monospace; font-size:0.78rem; color:var(--gray); min-width:160px;">${t.code}</span>
+          <strong style="min-width:60px;">${t.box}</strong>
+          <span style="font-size:0.83rem; color:var(--gray); flex:1;">${t.asistente} · ${t.items.length} ítem(s)</span>
+          <span class="badge ${ESTADOS[t.estado]?.cls}">${ESTADOS[t.estado]?.label}</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${t.despachado && t.estado !== 'ENTREGADO' ? `<button class="btn btn-success btn-sm" onclick="confirmarEntrega(${t.id});renderAdmin()">✓ Confirmar entrega</button>` : ''}
+            ${!['ENTREGADO','CANCELADO'].includes(t.estado) ? `<button class="btn btn-danger btn-sm" onclick="cancelarTicket(${t.id});renderAdmin()">Cancelar</button>` : ''}
+            ${t.estado === 'CANCELADO' ? `<button class="btn btn-outline btn-sm" onclick="reabrirTicket(${t.id})">Reabrir</button>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  };
+
+  el.innerHTML = renderGroup(activos, 'Activos', '#f9fdff') + renderGroup(cerrados, 'Cerrados', '#f5f5f5');
+  if (!activos.length && !cerrados.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>No hay tickets esta semana.</p></div>';
+  }
+}
+
+function reabrirTicket(id) {
+  const t = tickets.find(t => t.id === id);
+  if (t) { t.estado = 'ABIERTO'; saveState(); showToast(`🔄 Ticket ${t.code} reabierto`); renderAdmin(); }
+}
+
+function descontarStockDeTicket(t) {
+  t.items.forEach(item => {
+    if (item.estado === 'DISPONIBLE' || item.estado === 'PARCIAL') {
+      const inv = inventario.find(i => i.nombre === item.nombre);
+      const cant = item.estado === 'PARCIAL' ? (item.cantParcial || item.cantidad) : item.cantidad;
+      if (inv) inv.stock = Math.max(0, inv.stock - cant);
+    }
+  });
+}
+
+function confirmarEntrega(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  t.estado = 'ENTREGADO';
+  descontarStockDeTicket(t);
+  saveState();
+  showToast(`📦 Ticket ${t.code} entregado — stock actualizado`);
+  renderAdmin();
+  renderAlertas();
+}
+
+function cancelarTicket(id) {
+  const t = tickets.find(t => t.id === id);
+  if (t) { t.estado = 'CANCELADO'; saveState(); showToast(`🚫 Ticket ${t.code} cancelado`); renderAdmin(); renderDashboard(); }
+}
+
+function renderReporte() {
+  const r = document.getElementById('reporte-semanal');
+  const total = tickets.length;
+  const entregados = tickets.filter(t => t.estado === 'ENTREGADO').length;
+  const abiertos = tickets.filter(t => t.estado === 'ABIERTO').length;
+  const parciales = tickets.filter(t => t.estado === 'PARCIAL').length;
+  const urgentes = tickets.flatMap(t => t.items).filter(i => i.urgente).length;
+
+  // Top insumos
+  const itemCount = {};
+  tickets.forEach(t => t.items.forEach(i => { itemCount[i.nombre] = (itemCount[i.nombre] || 0) + i.cantidad; }));
+  const top5 = Object.entries(itemCount).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const maxVal = top5[0]?.[1] || 1;
+
+  // Box más activo
+  const boxCount = {};
+  tickets.forEach(t => { boxCount[t.box] = (boxCount[t.box] || 0) + 1; });
+  const topBox = Object.entries(boxCount).sort((a,b) => b[1]-a[1])[0];
+
+  r.innerHTML = `
+    <div class="stats-grid" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Tickets creados</div></div>
+      <div class="stat-card s-success"><div class="stat-number">${entregados}</div><div class="stat-label">Entregados</div></div>
+      <div class="stat-card s-warning"><div class="stat-number">${parciales}</div><div class="stat-label">Parciales</div></div>
+      <div class="stat-card s-danger"><div class="stat-number">${urgentes}</div><div class="stat-label">Ítems urgentes</div></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; flex-wrap:wrap;">
+      <div>
+        <div class="section-title">Top 5 insumos solicitados</div>
+        <table class="rank-table">
+          <thead><tr><th>#</th><th>Insumo</th><th>Cant.</th><th></th></tr></thead>
+          <tbody>
+            ${top5.map(([nombre, cant], i) => `
+              <tr>
+                <td class="rank-num">${i+1}</td>
+                <td>${nombre}</td>
+                <td><strong>${cant}</strong></td>
+                <td style="width:100px;"><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(cant/maxVal*100)}%"></div></div></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="section-title">Box más activo</div>
+        ${topBox ? `<div style="font-size:2rem; font-weight:800; color:var(--teal);">${topBox[0]}</div>
+        <div style="font-size:0.85rem; color:var(--gray);">${topBox[1]} solicitudes esta semana</div>` : '<p>Sin datos</p>'}
+        <div class="section-title" style="margin-top:20px;">Estado por box</div>
+        <table class="rank-table">
+          <thead><tr><th>Box</th><th>Tickets</th><th>Entregados</th></tr></thead>
+          <tbody>
+            ${['Box 1','Box 2','Box 3','Box 4','Box 5','Box 6'].map(box => {
+              const bt = tickets.filter(t => t.box === box);
+              const be = bt.filter(t => t.estado === 'ENTREGADO').length;
+              return bt.length > 0 ? `<tr><td>${box}</td><td>${bt.length}</td><td>${be}/${bt.length}</td></tr>` : '';
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════
+function renderDashboard() {
+  if (currentRol === 'asistente') {
+    document.getElementById('dash-asistente').style.display = 'block';
+    document.getElementById('dash-general').style.display   = 'none';
+    renderDashboardAsistente();
+  } else {
+    document.getElementById('dash-asistente').style.display = 'none';
+    document.getElementById('dash-general').style.display   = 'block';
+    renderStats();
+    renderFilters();
+    renderTicketGrid();
+  }
+}
+
+// ── Estado amigable para asistentes — sigue el flujograma ──
+function estadoAmigable(t) {
+  if (t.estado === 'ENTREGADO')              return { icon: '✅', label: 'Entregado',                        color: '#2e7d32', bg: '#e8f5e9' };
+  if (t.progreso === 'RECHAZADO')            return { icon: '↩️', label: 'Devuelto — revisa observación',   color: '#c62828', bg: '#ffebee' };
+  if (t.progreso === 'ENTREGA_COMPLETA')     return { icon: '🔔', label: '¡Listo para retirar!',            color: '#1565c0', bg: '#e3f2fd' };
+  if (t.progreso === 'ENTREGA_PARCIAL')      return { icon: '📦', label: 'Entrega parcial lista para retirar — faltantes en gestión', color: '#e65100', bg: '#fff3e0' };
+  if (t.progreso === 'REVISADO')             return { icon: '🔍', label: 'En revisión por bodega',          color: '#f57c00', bg: '#fff8e1' };
+  if (t.estado === 'PARCIAL')                return { icon: '⚡', label: 'Entrega parcial en proceso',      color: '#e65100', bg: '#fff3e0' };
+  return                                            { icon: '📤', label: 'Solicitud enviada',               color: '#555',    bg: '#f5f5f5' };
+}
+
+function renderDashboardAsistente() {
+  const el = document.getElementById('dash-asistente');
+  const misTickets = tickets.filter(t => t.asistente === currentUser).reverse();
+
+  // Alerta si hay alguno listo para retirar
+  const listos = misTickets.filter(t => t.despachado && t.estado === 'PENDIENTE');
+  const alertaHTML = listos.length > 0 ? `
+    <div class="alert-banner alert-info" style="margin-bottom:20px;">
+      <div class="alert-icon">🔔</div>
+      <div class="alert-body">
+        <div class="alert-title">¡Tienes ${listos.length} pedido(s) listo(s) para retirar!</div>
+        <div class="alert-desc">Acércate a bodega para retirar tu pedido y confirmar la recepción.</div>
+      </div>
+    </div>` : '';
+
+  if (misTickets.length === 0) {
+    el.innerHTML = alertaHTML + `<div class="empty-state"><div class="icon">📋</div><p>Aún no tienes solicitudes esta semana.<br>Ve a <strong>Nueva Solicitud</strong> para crear un pedido.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = alertaHTML + `
+    <div style="font-size:1rem; font-weight:700; color:var(--teal-dark); margin-bottom:16px;">
+      Mis solicitudes — ${currentUser}
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px;">
+      ${misTickets.map(t => {
+        const ea = estadoAmigable(t);
+        return `
+        <div style="background:white; border-radius:12px; box-shadow:0 1px 8px rgba(0,0,0,0.08); overflow:hidden;">
+          <!-- Estado visual grande -->
+          <div style="background:${ea.bg}; padding:18px 20px; display:flex; align-items:center; gap:12px; border-bottom:3px solid ${ea.color};">
+            <span style="font-size:2rem;">${ea.icon}</span>
+            <div>
+              <div style="font-weight:800; font-size:1rem; color:${ea.color};">${ea.label}</div>
+              <div style="font-size:0.75rem; color:var(--gray); margin-top:2px; font-family:monospace;">${t.code}</div>
+            </div>
+          </div>
+          <!-- Contenido -->
+          <div style="padding:14px 18px;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--gray); margin-bottom:8px; text-transform:uppercase;">
+              ${t.box} · ${formatDate(t.fecha)}
+            </div>
+            <div style="font-size:0.87rem; color:#333; line-height:1.7;">
+              ${t.items.map(i => `
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span style="color:var(--teal);">•</span>
+                  <span>${i.nombre}</span>
+                  <span style="color:var(--gray);">
+                    ${i.estado === 'PARCIAL' && i.cantParcial
+                      ? `<strong style="color:#e65100;">${i.cantParcial}</strong> de ${i.cantidad} ${i.unidad}`
+                      : `×${i.cantidad} ${i.unidad}`}
+                  </span>
+                  ${i.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : ''}
+                  ${i.estado === 'SIN_STOCK' ? '<span class="badge badge-sinstock">Sin stock</span>' : ''}
+                  ${i.estado === 'PARCIAL' ? '<span class="badge badge-parcial">Parcial</span>' : ''}
+                </div>`).join('')}
+            </div>
+            ${t.progreso === 'RECHAZADO' && t.observacionRechazo ? `
+              <div style="background:var(--danger-light); border-radius:6px; padding:10px 12px; margin-top:10px; font-size:0.83rem; color:var(--danger);">
+                <strong>Motivo:</strong> ${t.observacionRechazo}
+                <div style="margin-top:8px; font-size:0.8rem; color:var(--gray);">Corrije tu solicitud y vuelve a enviarla.</div>
+              </div>` : ''}
+            ${t.faltantesEscalados?.length > 0 ? `
+              <div style="background:#fff3e0; border-radius:6px; padding:10px 12px; margin-top:10px; font-size:0.83rem; color:#e65100;">
+                <strong>📋 Faltantes en gestión de compra:</strong><br>${t.faltantesEscalados.join(', ')}
+              </div>` : ''}
+            ${(t.progreso === 'ENTREGA_COMPLETA' || t.progreso === 'ENTREGA_PARCIAL') && t.estado !== 'ENTREGADO' ? `
+              <button class="btn btn-success" style="width:100%; margin-top:14px; justify-content:center;" onclick="confirmarRecepcionAsistente(${t.id})">
+                ✓ Confirmar que lo recibí
+              </button>` : ''}
+            ${t.estado === 'ENTREGADO' ? `
+              <div style="text-align:center; margin-top:12px; font-size:0.82rem; color:var(--success); font-weight:600;">
+                📦 Recibido y confirmado
+              </div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function confirmarRecepcionAsistente(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  t.estado = 'ENTREGADO';
+  descontarStockDeTicket(t);
+  saveState();
+  showToast('📦 ¡Recepción confirmada! Stock actualizado.');
+  renderDashboard();
+  renderAlertas();
+}
+
+function renderStats() {
+  const grid = document.getElementById('stats-grid');
+  const counts = { ABIERTO: 0, REVISION: 0, PARCIAL: 0, ENTREGADO: 0, PENDIENTE: 0, CANCELADO: 0 };
+  tickets.forEach(t => { counts[t.estado] = (counts[t.estado] || 0) + 1; });
+  grid.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${tickets.length}</div><div class="stat-label">Total tickets</div></div>
+    <div class="stat-card"><div class="stat-number">${counts.ABIERTO}</div><div class="stat-label">Abiertos</div></div>
+    <div class="stat-card s-warning"><div class="stat-number">${counts.REVISION + counts.PARCIAL}</div><div class="stat-label">En proceso</div></div>
+    <div class="stat-card s-success"><div class="stat-number">${counts.ENTREGADO}</div><div class="stat-label">Entregados</div></div>
+    <div class="stat-card s-pending"><div class="stat-number">${counts.PENDIENTE}</div><div class="stat-label">Pendientes confirm.</div></div>
+  `;
+}
+
+function renderFilters() {
+  const statusContainer = document.getElementById('filtros-status');
+  const boxContainer = document.getElementById('filtros-box');
+
+  const statuses = ['TODOS', ...Object.keys(ESTADOS)];
+  statusContainer.innerHTML = `<span style="font-size:0.82rem; font-weight:700; color:var(--gray);">Estado:</span>` +
+    statuses.map(s => `
+      <button class="filter-chip ${activeFilters.status === s ? 'active' : ''}" onclick="setFilter('status','${s}')">
+        ${s === 'TODOS' ? 'Todos' : ESTADOS[s]?.label}
+      </button>`).join('');
+
+  const boxes = ['TODOS', ...['Box 1','Box 2','Box 3','Box 4','Box 5','Box 6'].filter(b => tickets.some(t => t.box === b))];
+  boxContainer.innerHTML = `<span style="font-size:0.82rem; font-weight:700; color:var(--gray);">Box:</span>` +
+    boxes.map(b => `
+      <button class="filter-chip ${activeFilters.box === b ? 'active' : ''}" onclick="setFilter('box','${b}')">
+        ${b === 'TODOS' ? 'Todos' : b}
+      </button>`).join('');
+}
+
+function setFilter(type, val) {
+  activeFilters[type] = val;
+  renderFilters();
+  renderTicketGrid();
+}
+
+function renderTicketGrid() {
+  const container = document.getElementById('ticket-grid-container');
+  let filtered = tickets;
+  if (activeFilters.status !== 'TODOS') filtered = filtered.filter(t => t.estado === activeFilters.status);
+  if (activeFilters.box !== 'TODOS') filtered = filtered.filter(t => t.box === activeFilters.box);
+  filtered = [...filtered].reverse();
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔍</div><p>No hay tickets con esos filtros.</p></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(t => `
+    <div class="ticket-card status-${t.estado.toLowerCase()}" onclick="openModal(${t.id})">
+      <div class="ticket-header">
+        <div>
+          <div class="ticket-box">${t.box}</div>
+          <div class="ticket-code">${t.code}</div>
+        </div>
+        <span class="badge ${ESTADOS[t.estado]?.cls}">${ESTADOS[t.estado]?.label}</span>
+      </div>
+      <div class="ticket-items">
+        ${t.items.slice(0,3).map(i => `• ${i.nombre} ×${i.cantidad} ${i.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : ''}`).join('<br>')}
+        ${t.items.length > 3 ? `<br><em style="color:#aaa;">+${t.items.length - 3} más</em>` : ''}
+      </div>
+      <div class="ticket-footer">
+        <span>👤 ${t.asistente}</span>
+        <span>${formatDate(t.fecha)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════
+function openModal(id) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+
+  document.getElementById('modal-title').textContent = `${t.code} — ${t.box}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+      <span class="badge ${ESTADOS[t.estado]?.cls}" style="font-size:0.85rem; padding:5px 14px;">${ESTADOS[t.estado]?.label}</span>
+      <span style="font-size:0.83rem; color:var(--gray);">👤 ${t.asistente} &nbsp;·&nbsp; 📅 ${formatDate(t.fecha)}</span>
+    </div>
+    <div class="section-title">Insumos solicitados</div>
+    ${t.items.map(item => `
+      <div class="item-status-row">
+        <span class="item-name">${item.nombre}</span>
+        <span class="item-qty">${item.cantidad} ${item.unidad}</span>
+        ${item.urgente ? '<span class="badge badge-urgente">URGENTE</span>' : ''}
+        ${currentRol !== 'asistente' ? `<span class="badge ${ITEM_ESTADOS[item.estado]?.cls}">${ITEM_ESTADOS[item.estado]?.label}</span>` : ''}
+        ${currentRol !== 'asistente' && item.obs ? `<span style="font-size:0.78rem; color:var(--gray); font-style:italic;">${item.obs}</span>` : ''}
+      </div>
+    `).join('')}
+    ${t.despachadoPor ? `<div style="margin-top:14px; font-size:0.83rem; color:var(--success);"><strong>🚚 Despachado por:</strong> ${t.despachadoPor}</div>` : ''}
+  `;
+
+  const footer = document.getElementById('modal-footer');
+  footer.innerHTML = '';
+  if (t.estado === 'PENDIENTE' && t.despachado) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-success';
+    btn.textContent = '✓ Confirmar recepción';
+    btn.onclick = () => { t.estado = 'ENTREGADO'; closeModal(); showToast('📦 Recepción confirmada'); renderDashboard(); };
+    footer.appendChild(btn);
+  }
+  if (!['ENTREGADO','CANCELADO'].includes(t.estado)) {
+    const btn2 = document.createElement('button');
+    btn2.className = 'btn btn-danger';
+    btn2.textContent = 'Cancelar ticket';
+    btn2.style.fontSize = '0.82rem';
+    btn2.onclick = () => { t.estado = 'CANCELADO'; closeModal(); showToast('🚫 Ticket cancelado'); renderDashboard(); };
+    footer.appendChild(btn2);
+  }
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn btn-outline';
+  closeBtn.textContent = 'Cerrar';
+  closeBtn.onclick = closeModal;
+  footer.appendChild(closeBtn);
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function showToast(msg, dur = 3000) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), dur);
+}
+
+// ═══════════════════════════════════════════════
+//  INVENTARIO — DATA
+// ═══════════════════════════════════════════════
+let inventario = [
+  { id:1, nombre:"Toalla Jumbo Bianca Estándar 2x200", cat:"Descartables", unidad:"Unidad", stock:38, min:1 },
+  { id:2, nombre:"CleanCarrier", cat:"Protección personal", unidad:"Caja", stock:17, min:2 },
+  { id:3, nombre:"Humboldt Guantes de Nitrilo", cat:"Protección personal", unidad:"Caja", stock:77, min:2 },
+  { id:4, nombre:"Vannicafé", cat:"Descartables", unidad:"Paquete", stock:2, min:1 },
+  { id:5, nombre:"Cranberry Eyector de Saliva", cat:"Descartables", unidad:"Unidad", stock:280, min:1 },
+  { id:6, nombre:"Cranberry Jeringa Desechable", cat:"Descartables", unidad:"Caja", stock:1, min:1 },
+  { id:7, nombre:"Misawa Dental Needle", cat:"Anestesia", unidad:"Unidad", stock:150, min:1 },
+  { id:8, nombre:"Terumo Dental Needle", cat:"Anestesia", unidad:"Caja", stock:1, min:1 },
+  { id:9, nombre:"Disposable Dental Needle", cat:"Anestesia", unidad:"Caja", stock:1, min:1 },
+  { id:10, nombre:"STARJECT", cat:"Anestesia", unidad:"Caja", stock:1, min:1 },
+  { id:11, nombre:"Surgical Blades / Sterile Surgical Blades", cat:"Instrumental", unidad:"Unidad", stock:317, min:1 },
+  { id:12, nombre:"Tórulas Dentales", cat:"Descartables", unidad:"Unidad", stock:2000, min:1 },
+  { id:13, nombre:"NaCl 0,9% Ecoflac", cat:"Otros", unidad:"Unidad", stock:2, min:1 },
+  { id:14, nombre:"UKLEAN CLORO", cat:"Desinfección", unidad:"Unidad", stock:1, min:1 },
+  { id:15, nombre:"Dental Dam", cat:"Descartables", unidad:"Unidad", stock:30, min:1 },
+  { id:16, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:700, min:1 },
+  { id:17, nombre:"Paper Points M3 Series", cat:"Endodoncia", unidad:"Unidad", stock:250, min:1 },
+  { id:18, nombre:"Absorbent Paper Points / Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:840, min:1 },
+  { id:19, nombre:"Absorbent Paper Points / Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:280, min:1 },
+  { id:20, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:45, min:1 },
+  { id:21, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:180, min:1 },
+  { id:22, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:116, min:1 },
+  { id:23, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:34, min:1 },
+  { id:24, nombre:"Absorbent Paper Points", cat:"Endodoncia", unidad:"Unidad", stock:87, min:1 },
+  { id:25, nombre:"K-Files", cat:"Endodoncia", unidad:"Unidad", stock:12, min:1 },
+  { id:26, nombre:"K-Files", cat:"Endodoncia", unidad:"Unidad", stock:6, min:1 },
+  { id:27, nombre:"K-Files", cat:"Endodoncia", unidad:"Unidad", stock:6, min:1 },
+  { id:28, nombre:"MANI Reamers", cat:"Endodoncia", unidad:"Unidad", stock:4, min:1 },
+  { id:29, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:108, min:1 },
+  { id:30, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:142, min:1 },
+  { id:31, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:243, min:1 },
+  { id:32, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:120, min:1 },
+  { id:33, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:240, min:1 },
+  { id:34, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:260, min:1 },
+  { id:35, nombre:"Gutta Percha Points", cat:"Endodoncia", unidad:"Unidad", stock:125, min:1 },
+  { id:36, nombre:"Chroma Print Premium Fast Set", cat:"Material de impresión", unidad:"Bolsa", stock:7, min:1 },
+  { id:37, nombre:"Yeso Piedra Elite", cat:"Material de impresión", unidad:"Bolsa", stock:4, min:1 },
+  { id:38, nombre:"Papel Higiénico Jumbo", cat:"Descartables", unidad:"Unidad", stock:22, min:1 },
+  { id:39, nombre:"Paquete Quirúrgico Estéril", cat:"Descartables", unidad:"Paquete", stock:3, min:1 },
+  { id:40, nombre:"Profluorid Varnish SingleDose", cat:"Otros", unidad:"Unidad", stock:39, min:1 },
+  { id:41, nombre:"Express", cat:"Material de impresión", unidad:"Unidad", stock:5, min:1 },
+  { id:42, nombre:"GC-Remox", cat:"Desinfección", unidad:"Unidad", stock:1, min:1 },
+  { id:43, nombre:"Temp-Bond NE", cat:"Cementos", unidad:"Caja", stock:1, min:1 },
+  { id:44, nombre:"Vitremer", cat:"Cementos", unidad:"Caja", stock:1, min:1 },
+  { id:45, nombre:"Mouth Mirrors", cat:"Instrumental", unidad:"Unidad", stock:12, min:1 },
+  { id:46, nombre:"Cepillo Especial Prótesis", cat:"Otros", unidad:"Unidad", stock:3, min:1 },
+  { id:47, nombre:"Monoject Endodontic Irrigation Syringe with Needle", cat:"Endodoncia", unidad:"Unidad", stock:80, min:1 },
+  { id:48, nombre:"COE-PAK Regular Set", cat:"Cementos", unidad:"Caja", stock:1, min:1 },
+  { id:49, nombre:"Cranberry Jeringa Desechable", cat:"Descartables", unidad:"Unidad", stock:9, min:1 },
+  { id:50, nombre:"Pre-Tipped Syringes", cat:"Descartables", unidad:"Unidad", stock:100, min:1 },
+  { id:51, nombre:"Cranberry Jeringa Desechable Tuberculina", cat:"Descartables", unidad:"Unidad", stock:43, min:1 },
+  { id:52, nombre:"Guantes Quirúrgicos de Látex Estériles", cat:"Protección personal", unidad:"Unidad", stock:14, min:2 },
+  { id:53, nombre:"Guantes Quirúrgicos de Látex Estériles", cat:"Protección personal", unidad:"Unidad", stock:12, min:2 },
+  { id:54, nombre:"Guantes Quirúrgicos de Látex Estériles", cat:"Protección personal", unidad:"Unidad", stock:25, min:2 },
+  { id:55, nombre:"Disposable Micro Applicators", cat:"Descartables", unidad:"Unidad", stock:355, min:1 },
+  { id:56, nombre:"Aspirator Tips", cat:"Descartables", unidad:"Bolsa", stock:1, min:1 },
+  { id:57, nombre:"Harmonize Universal Dentin", cat:"Composite / Resinas", unidad:"Jeringa", stock:4, min:1 },
+  { id:58, nombre:"Mascarilla 3 Pliegues con Elásticos", cat:"Protección personal", unidad:"Unidad", stock:4050, min:2 },
+  { id:59, nombre:"Mascarillas Médicas", cat:"Protección personal", unidad:"Unidad", stock:300, min:2 },
+  { id:60, nombre:"Gasa No Tejida 5x5 cm", cat:"Descartables", unidad:"Unidad", stock:400, min:1 },
+  { id:61, nombre:"Ácido Condaaf", cat:"Adhesivos", unidad:"Jeringa", stock:10, min:1 },
+  { id:62, nombre:"Harmonize Universal", cat:"Composite / Resinas", unidad:"Unidad", stock:1, min:1 },
+  { id:63, nombre:"Condicionador de Porcelana", cat:"Adhesivos", unidad:"Jeringa", stock:1, min:1 },
+  { id:64, nombre:"Caristop-Hilo Dental / Dental Floss", cat:"Otros", unidad:"Unidad", stock:4, min:1 },
+  { id:65, nombre:"i-LINER / Glass Liner", cat:"Cementos", unidad:"Jeringa", stock:5, min:1 },
+  { id:66, nombre:"UltraCal XS", cat:"Endodoncia", unidad:"Jeringa", stock:1, min:1 },
+  { id:67, nombre:"Papel para Articular Recto", cat:"Otros", unidad:"Caja", stock:1, min:1 },
+  { id:68, nombre:"Guincha de celuloide", cat:"Descartables", unidad:"Unidad", stock:1, min:1 },
+  { id:69, nombre:"Acrílico Corona Colores Cross Linked", cat:"Composite / Resinas", unidad:"Gramo", stock:16, min:1 },
+  { id:70, nombre:"Acrílico Marche", cat:"Composite / Resinas", unidad:"Envase", stock:1, min:1 },
+  { id:71, nombre:"Propilenglicol", cat:"Otros", unidad:"Frasco", stock:1, min:1 },
+  { id:72, nombre:"Obturador Provisorio", cat:"Cementos", unidad:"Frasco", stock:5, min:1 },
+  { id:73, nombre:"HEMA Desensitizer", cat:"Otros", unidad:"Frasco", stock:1, min:1 },
+  { id:74, nombre:"Hemostop", cat:"Otros", unidad:"Frasco", stock:1, min:1 },
+  { id:75, nombre:"ChemFil Superior", cat:"Cementos", unidad:"Unidad", stock:4, min:1 },
+  { id:76, nombre:"OptiGuard Light Cure Sealant", cat:"Sellantes", unidad:"Frasco", stock:2, min:1 },
+  { id:77, nombre:"Scotchbond Etchant", cat:"Adhesivos", unidad:"Frasco", stock:1, min:1 },
+  { id:78, nombre:"Pasta Profiláctica Shine", cat:"Otros", unidad:"Tubo", stock:2, min:1 },
+  { id:79, nombre:"Retractor #0", cat:"Otros", unidad:"Frasco", stock:2, min:1 },
+  { id:80, nombre:"Tiras Abrasivas de Acero", cat:"Instrumental", unidad:"Unidad", stock:5, min:1 },
+  { id:81, nombre:"Cera de Ortodoncia", cat:"Otros", unidad:"Unidad", stock:3, min:1 },
+  { id:82, nombre:"Pasta Profiláctica MAYON", cat:"Otros", unidad:"Frasco", stock:1, min:1 },
+  { id:83, nombre:"Coronas de Policarbonato", cat:"Otros", unidad:"Unidad", stock:40, min:1 },
+  { id:84, nombre:"Nylon Azul", cat:"Suturas", unidad:"Sobre", stock:36, min:1 },
+  { id:85, nombre:"Medium Speedx", cat:"Material de impresión", unidad:"Caja", stock:1, min:1 },
+  { id:86, nombre:"MEPISV", cat:"Anestesia", unidad:"Cartucho", stock:40, min:1 },
+  { id:87, nombre:"Intracarelido-E", cat:"Anestesia", unidad:"Cartucho", stock:31, min:1 },
+  { id:88, nombre:"Tubli-Seal", cat:"Endodoncia", unidad:"Caja", stock:1, min:1 },
+  { id:89, nombre:"Óxido de Zinc USP", cat:"Cementos", unidad:"Frasco", stock:2, min:1 },
+  { id:90, nombre:"Pulpovent", cat:"Endodoncia", unidad:"Frasco", stock:1, min:1 },
+  { id:91, nombre:"Ketac Molar Easymix", cat:"Cementos", unidad:"Set", stock:1, min:1 },
+  { id:92, nombre:"Whiteness Super-endo", cat:"Otros", unidad:"Caja", stock:1, min:1 },
+  { id:93, nombre:"Indicadores de Esterilización para Autoclaves", cat:"Desinfección", unidad:"Tira", stock:0, min:1 },
+  { id:94, nombre:"Eugenol", cat:"Cementos", unidad:"Frasco", stock:1, min:1 },
+  { id:95, nombre:"Eucaliptol", cat:"Endodoncia", unidad:"Frasco", stock:2, min:1 },
+  { id:96, nombre:"Water Dispensing Bottle", cat:"Cementos", unidad:"Frasco", stock:2, min:1 },
+  { id:97, nombre:"Gingial Hilo #1", cat:"Otros", unidad:"Frasco", stock:4, min:1 },
+  { id:98, nombre:"Ultrapak #000", cat:"Otros", unidad:"Frasco", stock:1, min:1 },
+  { id:99, nombre:"Paramonoclorofenol", cat:"Endodoncia", unidad:"Frasco", stock:1, min:1 },
+  { id:100, nombre:"Whiteness HP Maxx 35%", cat:"Otros", unidad:"Unidad", stock:0, min:1 },
+  { id:101, nombre:"DSPdam Green", cat:"Otros", unidad:"Jeringa", stock:1, min:1 },
+  { id:102, nombre:"Godivas", cat:"Otros", unidad:"Unidad", stock:6, min:1 },
+  { id:103, nombre:"Aplicadores de flúor", cat:"Descartables", unidad:"Unidad", stock:100, min:1 },
+  { id:104, nombre:"Bolsa transparente 15x20 cm", cat:"Descartables", unidad:"Unidad", stock:100, min:1 },
+  { id:105, nombre:"Alcohol 70%", cat:"Desinfección", unidad:"Envase", stock:1, min:1 },
+];
+let pedidosMensuales = [];
+let invIdCounter = 200;
+
+// ── Estado del stock por ítem ──
+function stockEstado(item) {
+  if (item.stock === 0) return 'critico';
+  if (item.stock < item.min) return 'bajo';
+  return 'ok';
+}
+
+// ── Inventario tab switch ──
+function switchInvTab(tab) {
+  ['stock','pedido','agregar'].forEach(t => {
+    document.getElementById('inv-panel-' + t).style.display = tab === t ? 'block' : 'none';
+    document.getElementById('itab-' + t).classList.toggle('active', tab === t);
+  });
+  if (tab === 'stock') renderInventario();
+  if (tab === 'pedido') renderPedidosMensuales();
+  if (tab === 'agregar') renderInvEditar();
+}
+
+// ── Render inventario ──
+function renderInventario() {
+  const catFiltro = document.getElementById('inv-filtro-cat')?.value || '';
+  const estadoFiltro = document.getElementById('inv-filtro-estado')?.value || '';
+
+  let items = inventario;
+  if (catFiltro) items = items.filter(i => i.cat === catFiltro);
+  if (estadoFiltro) items = items.filter(i => stockEstado(i) === estadoFiltro);
+
+  const tbody = document.getElementById('inv-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = items.map(item => {
+    const est = stockEstado(item);
+    const pct = item.min > 0 ? Math.min(100, Math.round(item.stock / item.min * 100)) : 100;
+    const barCls = est === 'critico' ? 'stock-critical' : est === 'bajo' ? 'stock-low' : 'stock-ok';
+    const rowCls = est === 'critico' ? 'critico' : est === 'bajo' ? 'bajo-stock' : '';
+    const badgeCls = est === 'critico' ? 'badge-sinstock' : est === 'bajo' ? 'badge-parcial' : 'badge-disponible';
+    const badgeLabel = est === 'critico' ? '🔴 Crítico' : est === 'bajo' ? '🟡 Bajo' : '🟢 OK';
+    return `
+      <tr class="${rowCls}">
+        <td><strong>${item.nombre}</strong></td>
+        <td><span style="font-size:0.78rem; color:var(--gray);">${item.cat}</span></td>
+        <td>
+          <span class="qty-val">${item.stock}</span> ${item.unidad}
+          <span class="stock-bar-wrap"><span class="stock-bar ${barCls}" style="width:${pct}%"></span></span>
+        </td>
+        <td>${item.min} ${item.unidad}</td>
+        <td>${item.unidad}</td>
+        <td><span class="badge ${badgeCls}">${badgeLabel}</span></td>
+        <td>
+          <div class="qty-ctrl">
+            <button onclick="ajustarStock(${item.id}, -1)" title="Retirar">−</button>
+            <button onclick="ajustarStock(${item.id}, -5)" title="Retirar 5" style="font-size:0.72rem;">−5</button>
+            <button onclick="ajustarStock(${item.id}, +1)" title="Ingresar">+</button>
+            <button onclick="ajustarStock(${item.id}, +5)" title="Ingresar 5" style="font-size:0.72rem;">+5</button>
+          </div>
+        </td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost" style="color:var(--teal); font-size:0.78rem;" onclick="abrirEditarInsumo(${item.id})">✏️ Editar</button>
+          <button class="btn btn-ghost" style="color:var(--danger); font-size:0.78rem;" onclick="eliminarInsumo(${item.id})">✕ Eliminar</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  renderInvStats();
+  renderAlertas();
+}
+
+function ajustarStock(id, delta) {
+  const item = inventario.find(i => i.id === id);
+  if (!item) return;
+  item.stock = Math.max(0, item.stock + delta);
+  saveState();
+  renderInventario();
+  if (stockEstado(item) !== 'ok') showToast(`⚠️ ${item.nombre}: stock ${item.stock} ${item.unidad} (mín. ${item.min})`);
+}
+
+function eliminarInsumo(id) {
+  if (!confirm('¿Seguro que quieres eliminar este insumo del inventario?')) return;
+  inventario = inventario.filter(i => i.id !== id);
+  saveState();
+  sincronizarCatalogo();
+  renderInventario();
+  renderInvEditar();
+  showToast('🗑 Insumo eliminado del inventario');
+}
+
+function abrirEditarInsumo(id) {
+  const item = inventario.find(i => i.id === id);
+  if (!item) return;
+
+  const CATS = ['Adhesivos','Anestesia','Cementos','Composite / Resinas','Descartables','Desinfección','Endodoncia','Instrumental','Material de impresión','Protección personal','Sellantes','Suturas','Otros'];
+  const UNITS = ['Unidad','Caja','Paquete','Bolsa','Jeringa','Frasco','Rollo','Gramo','Envase','Cartucho','Sobre','Set','Tira','Tubo'];
+
+  document.getElementById('modal-title').textContent = '✏️ Editar insumo';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div class="form-group">
+        <label>Nombre del insumo</label>
+        <input type="text" id="edit-nombre" value="${item.nombre}" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:0.92rem; font-family:inherit; width:100%;">
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>Stock actual</label>
+          <input type="number" id="edit-stock" value="${item.stock}" min="0" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:0.92rem; font-family:inherit; width:100%;">
+        </div>
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>Stock mínimo</label>
+          <input type="number" id="edit-min" value="${item.min}" min="0" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:0.92rem; font-family:inherit; width:100%;">
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="form-group" style="flex:1; min-width:140px;">
+          <label>Unidad de medida</label>
+          <select id="edit-unidad" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:0.92rem; font-family:inherit; width:100%;">
+            ${UNITS.map(u => `<option ${u === item.unidad ? 'selected' : ''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="flex:1; min-width:160px;">
+          <label>Categoría</label>
+          <select id="edit-cat" style="padding:9px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:0.92rem; font-family:inherit; width:100%;">
+            ${CATS.map(c => `<option ${c === item.cat ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+
+  const footer = document.getElementById('modal-footer');
+  footer.innerHTML = '';
+
+  const btnGuardar = document.createElement('button');
+  btnGuardar.className = 'btn btn-primary';
+  btnGuardar.textContent = '✓ Guardar cambios';
+  btnGuardar.onclick = () => guardarEdicionInsumo(id);
+  footer.appendChild(btnGuardar);
+
+  const btnCancelar = document.createElement('button');
+  btnCancelar.className = 'btn btn-outline';
+  btnCancelar.textContent = 'Cancelar';
+  btnCancelar.onclick = closeModal;
+  footer.appendChild(btnCancelar);
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function guardarEdicionInsumo(id) {
+  const item = inventario.find(i => i.id === id);
+  if (!item) return;
+  const nombre = document.getElementById('edit-nombre').value.trim();
+  if (!nombre) { showToast('⚠️ El nombre no puede quedar vacío'); return; }
+  item.nombre  = nombre;
+  item.stock   = Math.max(0, parseInt(document.getElementById('edit-stock').value) || 0);
+  item.min     = Math.max(0, parseInt(document.getElementById('edit-min').value) || 1);
+  item.unidad  = document.getElementById('edit-unidad').value;
+  item.cat     = document.getElementById('edit-cat').value;
+  saveState();
+  closeModal();
+  sincronizarCatalogo();
+  renderInventario();
+  renderInvEditar();
+  showToast(`✏️ "${item.nombre}" actualizado`);
+}
+
+function agregarInsumo() {
+  const nombre = document.getElementById('new-nombre').value.trim();
+  const cat    = document.getElementById('new-cat').value;
+  const unidad = document.getElementById('new-unidad').value;
+  const stock  = parseInt(document.getElementById('new-stock').value) || 0;
+  const min    = parseInt(document.getElementById('new-min').value) || 1;
+  if (!nombre) { showToast('⚠️ Escribe el nombre del insumo'); return; }
+  inventario.push({ id: ++invIdCounter, nombre, cat, unidad, stock, min });
+  document.getElementById('new-nombre').value = '';
+  document.getElementById('new-stock').value = '0';
+  document.getElementById('new-min').value = '2';
+  saveState();
+  showToast(`✅ "${nombre}" agregado al inventario`);
+  sincronizarCatalogo();
+  // Refrescar selects de solicitud para que incluyan el nuevo insumo
+  document.querySelectorAll('#insumos-body select:first-child').forEach(sel => {
+    const val = sel.value;
+    sel.innerHTML = buildInsumoOptions(val);
+  });
+  renderInventario();
+  renderInvEditar();
+}
+
+function renderInvEditar() {
+  const el = document.getElementById('inv-editar-lista');
+  if (!el) return;
+  el.innerHTML = inventario.map(item => `
+    <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f0f0f0; flex-wrap:wrap;">
+      <span style="flex:1; min-width:160px; font-weight:500; font-size:0.88rem;">${item.nombre}</span>
+      <span style="font-size:0.78rem; color:var(--gray); min-width:100px;">${item.cat}</span>
+      <label style="font-size:0.78rem; color:var(--gray);">Stock mín.:
+        <input type="number" value="${item.min}" min="0" style="width:60px; margin-left:6px; padding:4px 6px; border:1px solid var(--border); border-radius:4px; font-size:0.82rem;"
+          onchange="editarMin(${item.id}, this.value)">
+      </label>
+      <span class="badge ${stockEstado(item)==='ok'?'badge-disponible':stockEstado(item)==='bajo'?'badge-parcial':'badge-sinstock'}">${item.stock} / ${item.min} ${item.unidad}</span>
+    </div>`).join('');
+}
+
+function editarMin(id, val) {
+  const item = inventario.find(i => i.id === id);
+  if (item) { item.min = Math.max(0, parseInt(val) || 0); saveState(); renderInventario(); }
+}
+
+// ── Stats inventario ──
+function renderInvStats() {
+  const el = document.getElementById('inv-stats');
+  if (!el) return;
+  const criticos = inventario.filter(i => stockEstado(i) === 'critico').length;
+  const bajos = inventario.filter(i => stockEstado(i) === 'bajo').length;
+  const ok = inventario.filter(i => stockEstado(i) === 'ok').length;
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${inventario.length}</div><div class="stat-label">Insumos registrados</div></div>
+    <div class="stat-card s-success"><div class="stat-number">${ok}</div><div class="stat-label">Stock OK</div></div>
+    <div class="stat-card s-warning"><div class="stat-number">${bajos}</div><div class="stat-label">Bajo stock</div></div>
+    <div class="stat-card s-danger"><div class="stat-number">${criticos}</div><div class="stat-label">Stock crítico</div></div>
+  `;
+}
+
+// ── Alertas ──
+function renderAlertas() {
+  const el = document.getElementById('inv-alertas');
+  if (!el) return;
+
+  const criticos = inventario.filter(i => stockEstado(i) === 'critico');
+  const bajos = inventario.filter(i => stockEstado(i) === 'bajo');
+  let html = '';
+
+  if (criticos.length > 0) {
+    html += `<div class="alert-banner alert-danger">
+      <div class="alert-icon">🔴</div>
+      <div class="alert-body">
+        <div class="alert-title">Stock CRÍTICO — ${criticos.length} insumo(s) agotado(s)</div>
+        <div class="alert-desc">${criticos.map(i => `<strong>${i.nombre}</strong> (0 ${i.unidad})`).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+  if (bajos.length > 0) {
+    html += `<div class="alert-banner alert-warning">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-body">
+        <div class="alert-title">Bajo stock — ${bajos.length} insumo(s) bajo el mínimo</div>
+        <div class="alert-desc">${bajos.map(i => `${i.nombre} (${i.stock}/${i.min} ${i.unidad})`).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+  if (criticos.length === 0 && bajos.length === 0) {
+    html = `<div class="alert-banner alert-success">
+      <div class="alert-icon">✅</div>
+      <div class="alert-body">
+        <div class="alert-title">Todo el stock está en niveles correctos</div>
+        <div class="alert-desc">No se detectan insumos bajo el mínimo.</div>
+      </div>
+    </div>`;
+  }
+  el.innerHTML = html;
+
+  // badge en tab
+  const badge = document.getElementById('alert-badge');
+  if (badge) {
+    const total = criticos.length + bajos.length;
+    if (total > 0) { badge.style.display = 'inline-flex'; badge.textContent = total; }
+    else { badge.style.display = 'none'; }
+  }
+}
+
+// ── Alerta pedido mensual (día 25) ──
+function checkAlertaMensual() {
+  const hoy = new Date();
+  const dia = hoy.getDate();
+  const mes = hoy.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  const el = document.getElementById('inv-alerta-mensual');
+  if (!el) return;
+
+  if (dia >= 24) {
+    el.innerHTML = `<div class="alert-banner alert-info" style="margin-bottom:14px;">
+      <div class="alert-icon">📅</div>
+      <div class="alert-body">
+        <div class="alert-title">Recordatorio de pedido mensual — ${mes}</div>
+        <div class="alert-desc">
+          El día 25 de cada mes Javiera debe generar el pedido mensual de reposición.<br>
+          Ve a la pestaña <strong>Pedido mensual</strong> para crearlo y enviarlo a Sayen para autorización.
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn btn-primary" style="font-size:0.82rem; padding:7px 14px;" onclick="switchInvTab('pedido'); crearPedidoMensual();">
+            📋 Generar pedido mensual ahora
+          </button>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    const dias = 24 - dia;
+    el.innerHTML = `<div class="alert-banner alert-info" style="margin-bottom:14px;">
+      <div class="alert-icon">📅</div>
+      <div class="alert-body">
+        <div class="alert-title">Próximo pedido mensual en ${dias} día(s)</div>
+        <div class="alert-desc">El pedido mensual de reposición se genera el 25 de cada mes.</div>
+      </div>
+    </div>`;
+  }
+}
+
+// ── Pedido mensual ──
+function crearPedidoMensual() {
+  switchInvTab('pedido');
+  const itemsBajos = inventario.filter(i => stockEstado(i) !== 'ok');
+  if (itemsBajos.length === 0) { showToast('ℹ️ No hay insumos bajo el mínimo actualmente'); return; }
+
+  const hoy = new Date();
+  const mes = hoy.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  const pedido = {
+    id: Date.now(),
+    codigo: `PED-${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`,
+    mes,
+    fecha: hoy.toISOString(),
+    estado: 'BORRADOR', // BORRADOR | PENDIENTE | APROBADO | RECHAZADO
+    creador: 'Javiera',
+    observacion: '',
+    items: itemsBajos.map(i => ({
+      nombre: i.nombre, unidad: i.unidad,
+      stockActual: i.stock, minimo: i.min,
+      cantPedida: Math.max(1, (i.min * 2) - i.stock),
+    })),
+  };
+  pedidosMensuales.unshift(pedido);
+  saveState();
+  renderPedidosMensuales();
+  showToast(`📋 Pedido mensual ${pedido.codigo} generado — ${itemsBajos.length} ítem(s)`);
+}
+
+function crearPedidoManual() {
+  switchInvTab('pedido');
+  const hoy = new Date();
+  const mes = hoy.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  const pedido = {
+    id: Date.now(),
+    codigo: `PED-${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-M`,
+    mes,
+    fecha: hoy.toISOString(),
+    estado: 'BORRADOR',
+    creador: 'Javiera',
+    observacion: '',
+    items: [],
+  };
+  pedidosMensuales.unshift(pedido);
+  saveState();
+  renderPedidosMensuales();
+  showToast('✏️ Pedido manual creado — agrega los insumos necesarios');
+}
+
+function renderAdminPedidosMensuales() {
+  const el = document.getElementById('admin-pedidos-mensuales');
+  if (!el) return;
+  // Solo muestra los PENDIENTES (enviados por Javiera)
+  const pendientes = pedidosMensuales.filter(p => p.estado === 'PENDIENTE');
+  if (pendientes.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:24px;"><div class="icon" style="font-size:2rem;">📭</div><p>No hay pedidos mensuales pendientes de autorización.</p></div>';
+    return;
+  }
+  el.innerHTML = pendientes.map(p => renderPedidoCard(p)).join('');
+}
+
+function renderPedidosMensuales() {
+  const el = document.getElementById('pedidos-mensuales-container');
+  if (!el) return;
+  // Bodega ve todos sus pedidos; Admin ve solo desde panel admin
+  const lista = currentRol === 'bodega'
+    ? pedidosMensuales
+    : pedidosMensuales.filter(p => p.estado !== 'BORRADOR');
+  if (lista.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No hay pedidos mensuales este período.<br>Genera uno con el botón de abajo.</p></div>';
+    return;
+  }
+  el.innerHTML = lista.map(p => renderPedidoCard(p)).join('');
+}
+
+function renderPedidoCard(p) {
+    const estadoLabel = { BORRADOR:'Borrador', PENDIENTE:'Enviado — esperando autorización', APROBADO:'Autorizado', RECHAZADO:'Rechazado' };
+    const clsPedido = { BORRADOR:'borrador', PENDIENTE:'pendiente', APROBADO:'aprobado', RECHAZADO:'rechazado' }[p.estado] || 'pendiente';
+    const badgePedido = { BORRADOR:'badge-cancelado', PENDIENTE:'badge-revision', APROBADO:'badge-disponible', RECHAZADO:'badge-sinstock' }[p.estado] || 'badge-revision';
+    return `
+    <div class="pedido-card ${clsPedido}">
+      <div class="pedido-header">
+        <div>
+          <span style="font-family:monospace; font-size:0.82rem; color:var(--gray);">${p.codigo}</span>
+          &nbsp;·&nbsp; <strong>${p.mes}</strong>
+          <span style="font-size:0.8rem; color:var(--gray); margin-left:8px;">Creado por ${p.creador} · ${formatDate(p.fecha)}</span>
+        </div>
+        <span class="badge ${badgePedido}">${p.estado}</span>
+      </div>
+
+      <!-- Tabla de ítems -->
+      ${p.items.length > 0 ? `
+      <table class="inv-table" style="margin-bottom:12px;">
+        <thead><tr><th>Insumo</th><th>Stock actual</th><th>Mínimo</th><th>Cant. a pedir</th></tr></thead>
+        <tbody>
+          ${p.items.map((it, idx) => `
+            <tr ${it.esExtra ? 'style="background:#f0f9ff;"' : ''}>
+              <td>${it.nombre} ${it.esExtra ? '<span class="badge badge-abierto" style="font-size:0.68rem;">Nuevo</span>' : ''}</td>
+              <td>${it.stockActual !== undefined ? it.stockActual + ' ' + it.unidad : '—'}</td>
+              <td>${it.minimo !== undefined ? it.minimo + ' ' + it.unidad : '—'}</td>
+              <td>
+                ${p.estado === 'BORRADOR'
+                  ? `<input type="number" min="1" value="${it.cantPedida}" style="width:70px; padding:4px 6px; border:1px solid var(--border); border-radius:4px; font-size:0.85rem;" onchange="editarCantPedido(${p.id}, ${idx}, this.value)">`
+                  : `<strong>${it.cantPedida}</strong>`
+                } ${it.unidad}
+                ${p.estado === 'BORRADOR' ? `<button class="remove-btn" onclick="quitarItemPedido(${p.id}, ${idx})" title="Quitar" style="margin-left:6px;">✕</button>` : ''}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : `<div style="color:var(--gray); font-size:0.85rem; padding:10px 0; margin-bottom:12px;">Sin ítems aún — agrega insumos abajo.</div>`}
+
+      ${p.observacion ? `<div style="font-size:0.83rem; padding:8px 12px; background:rgba(0,0,0,0.05); border-radius:6px; margin-bottom:12px;">
+        <strong>Observación de Sayen:</strong> ${p.observacion}</div>` : ''}
+
+      <!-- ── BORRADOR: Javiera edita y envía ── -->
+      ${p.estado === 'BORRADOR' ? `
+        <div style="background:#f9fdff; border:1.5px dashed var(--teal-mid); border-radius:8px; padding:14px 16px; margin-bottom:14px;">
+          <div style="font-size:0.82rem; font-weight:700; color:var(--teal-dark); margin-bottom:10px;">➕ Agregar insumo al pedido</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:2; min-width:180px;">
+              <label style="font-size:0.75rem; font-weight:600; color:var(--gray); display:block; margin-bottom:3px;">Insumo</label>
+              <select id="extra-nombre-${p.id}" style="width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:6px; font-size:0.84rem; font-family:inherit;" onchange="onExtraInsumoChange(this,'${p.id}')">
+                ${buildInsumoOptions('')}
+              </select>
+            </div>
+            <div style="min-width:80px;">
+              <label style="font-size:0.75rem; font-weight:600; color:var(--gray); display:block; margin-bottom:3px;">Cantidad</label>
+              <input type="number" id="extra-cant-${p.id}" min="1" value="1" style="width:80px; padding:8px; border:1.5px solid var(--border); border-radius:6px; font-size:0.85rem;">
+            </div>
+            <div style="min-width:100px;">
+              <label style="font-size:0.75rem; font-weight:600; color:var(--gray); display:block; margin-bottom:3px;">Unidad</label>
+              <select id="extra-unidad-${p.id}" style="padding:8px; border:1.5px solid var(--border); border-radius:6px; font-size:0.85rem; font-family:inherit;">
+                <option>Caja</option><option>Unidad</option><option>Frasco</option><option>Bolsa</option><option>Rollo</option><option>Paquete</option><option>Jeringa</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="font-size:0.82rem; padding:8px 14px;" onclick="agregarItemAPedido(${p.id})">+ Agregar</button>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button class="btn btn-success" onclick="enviarPedidoAAdmin(${p.id})">📤 Enviar a Administración</button>
+        </div>` : ''}
+
+      <!-- ── PENDIENTE: lectura para Javiera, autorización para Sayen ── -->
+      ${p.estado === 'PENDIENTE' ? `
+        ${currentRol === 'bodega' ? `
+          <div style="background:var(--info-light); border-radius:8px; padding:12px 16px; font-size:0.85rem; color:var(--info); font-weight:600;">
+            📤 Enviado a Administración — esperando autorización de Sayen
+          </div>` : ''}
+        ${currentRol === 'admin' ? `
+          <div style="font-size:0.82rem; font-weight:600; color:var(--gray); margin-bottom:6px;">Observación (requerida si se rechaza):</div>
+          <textarea class="obs-input" id="obs-${p.id}" placeholder="Escribe la observación de rechazo…" rows="2"></textarea>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn btn-success" onclick="accionPedido(${p.id},'APROBADO')">✅ Autorizar pedido</button>
+            <button class="btn btn-danger" onclick="accionPedido(${p.id},'RECHAZADO')">✕ Rechazar</button>
+            <button class="btn btn-outline" style="margin-left:auto;" onclick="exportarPedido(${p.id})">📄 Exportar para cotización</button>
+          </div>` : ''}` : ''}
+
+      <!-- ── APROBADO / RECHAZADO ── -->
+      ${p.estado === 'APROBADO' ? `
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:0.85rem; color:var(--success); font-weight:700;">✅ Autorizado por Sayen — listo para cotizar</span>
+          <button class="btn btn-outline" onclick="exportarPedido(${p.id})" style="margin-left:auto;">📄 Exportar</button>
+        </div>` : ''}
+      ${p.estado === 'RECHAZADO' ? `
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:0.85rem; color:var(--danger); font-weight:700;">✕ Rechazado por Sayen</span>
+          ${currentRol === 'bodega' ? `<button class="btn btn-warning" onclick="reabrirPedido(${p.id})" style="margin-left:auto;">↩ Corregir y reenviar</button>` : ''}
+        </div>` : ''}
+
+    </div>`;
+}
+
+function editarCantPedido(pedidoId, idx, val) {
+  const p = pedidosMensuales.find(p => p.id === pedidoId);
+  if (p) p.items[idx].cantPedida = Math.max(1, parseInt(val) || 1);
+}
+
+// ── Catálogo de nombres predeterminados (marca comercial) ──
+const CATALOGO_BASE = [
+  // Protección personal
+  'Guantes nitrilo S (Ansell)', 'Guantes nitrilo M (Ansell)', 'Guantes nitrilo L (Ansell)',
+  'Mascarillas triple capa', 'Mascarillas KN95',
+  // Composite / Adhesivos
+  'Composite A1 (3M Filtek Z350)', 'Composite A2 (3M Filtek Z350)', 'Composite A3 (3M Filtek Z350)',
+  'Composite A3.5 (3M Filtek Z350)', 'Composite B2 (3M Filtek Z350)',
+  'Flow A1 (3M Filtek Supreme)', 'Flow A2 (3M Filtek Supreme)', 'Flow A3 (3M Filtek Supreme)',
+  'Adhesivo Single Bond Universal (3M)', 'Adhesivo Optibond FL (Kerr)',
+  'Ácido ortofosfórico 37% (Scotchbond)', 'Ácido grabador gel azul',
+  // Endodoncia
+  'Hipoclorito de sodio 5.25%', 'EDTA 17% (Ultradent)', 'Conos de papel #15-40',
+  'Conos de papel #45-80', 'Conos de gutapercha #15-40', 'Conos de gutapercha #45-80',
+  'Limas K #10', 'Limas K #15', 'Limas K #20', 'Limas K #25', 'Limas K #30',
+  'Limas ProTaper Next (Dentsply)', 'Limas WaveOne Gold',
+  // Anestesia
+  'Carpules Mepivacaína 2% (Septodont)', 'Carpules Articaína 4% (Septodont)',
+  'Agujas carpule cortas 27G', 'Agujas carpule largas 27G',
+  // Material clínico
+  'Suero fisiológico 500ml', 'Hilo retracción gingival #0', 'Hilo retracción gingival #1',
+  'Cemento provisional Cavit (3M)', 'Hidróxido de calcio pasta (Dentsply)',
+  'Cemento de ionómero vidrio (GC Fuji)', 'Cemento de zinc fosfato',
+  'Eyectores de saliva', 'Puntas de succión quirúrgica', 'Puntas de irrigación',
+  'Algodón dental', 'Rollos algodón', 'Gasas estériles 7.5x7.5',
+  'Hilo dental seda', 'Hilo dental encerado',
+  // Instrumental descartable
+  'Baberos desechables', 'Vasos de plástico descartables',
+  'Portamatriz Tofflemire', 'Matrices metálicas calibre 0.05',
+  'Cuñas de madera (Hawe)', 'Papel articular azul Bausch 40µ',
+  'Papel articular rojo Bausch 40µ', 'Papel articular doble cara Bausch',
+  // Fresas
+  'Fresas de carburo redondas #2', 'Fresas de carburo redondas #4',
+  'Fresas de carburo fisura #557', 'Fresas de carburo fisura #558',
+  'Fresas diamantadas cónicas', 'Fresas diamantadas esféricas',
+  // Otros
+  'Alginato Jeltrate (Dentsply)', 'Yeso piedra tipo IV',
+  'Silicona de condensación (Speedex)', 'Silicona de adición (Aquasil)',
+  'Adhesivo de yodo (Betadine)', 'Sutura seda 3-0', 'Sutura reabsorbible 4-0',
+];
+
+function sincronizarCatalogo() {
+  // Combina el catálogo base con los nombres del inventario actual
+  const nombresInventario = inventario.map(i => i.nombre);
+  const todos = [...new Set([...CATALOGO_BASE, ...nombresInventario])].sort();
+  const dl = document.getElementById('catalogo-insumos');
+  if (dl) dl.innerHTML = todos.map(n => `<option value="${n}">`).join('');
+}
+
+function agregarItemAPedido(pedidoId) {
+  const p = pedidosMensuales.find(p => p.id === pedidoId);
+  if (!p) return;
+  const selNombre = document.getElementById(`extra-nombre-${pedidoId}`);
+  const nombre  = selNombre?.value || '';
+  const cant    = parseInt(document.getElementById(`extra-cant-${pedidoId}`)?.value) || 1;
+  const unidad  = document.getElementById(`extra-unidad-${pedidoId}`)?.value || 'Unidad';
+  if (!nombre) { showToast('⚠️ Selecciona un insumo del listado'); return; }
+  // Buscar en inventario para precargar datos
+  const enInv = inventario.find(i => i.nombre.toLowerCase() === nombre.toLowerCase());
+  p.items.push({
+    nombre,
+    unidad: enInv ? enInv.unidad : unidad,
+    stockActual: enInv ? enInv.stock : '—',
+    minimo: enInv ? enInv.min : '—',
+    cantPedida: cant,
+    esExtra: true,
+  });
+  saveState();
+  showToast(`✅ "${nombre}" agregado al pedido`);
+  renderPedidosMensuales();
+}
+
+function quitarItemPedido(pedidoId, idx) {
+  const p = pedidosMensuales.find(p => p.id === pedidoId);
+  if (p) { p.items.splice(idx, 1); saveState(); renderPedidosMensuales(); showToast('🗑 Ítem eliminado del pedido'); }
+}
+
+function enviarPedidoAAdmin(id) {
+  const p = pedidosMensuales.find(p => p.id === id);
+  if (!p) return;
+  if (p.items.length === 0) { showToast('⚠️ Agrega al menos un insumo antes de enviar'); return; }
+  p.estado = 'PENDIENTE';
+  saveState();
+  showToast(`📤 Pedido ${p.codigo} enviado a Administración para autorización`);
+  renderPedidosMensuales();
+}
+
+function accionPedido(id, accion) {
+  if (currentRol !== 'admin') { showToast('⛔ Solo Administración puede autorizar pedidos'); return; }
+  const p = pedidosMensuales.find(p => p.id === id);
+  if (!p) return;
+  const obs = document.getElementById('obs-' + id)?.value.trim() || '';
+  if (accion === 'RECHAZADO' && !obs) { showToast('⚠️ Escribe una observación antes de rechazar'); return; }
+  p.estado = accion;
+  p.observacion = obs;
+  saveState();
+  showToast(accion === 'APROBADO' ? `✅ Pedido ${p.codigo} autorizado` : `✕ Pedido ${p.codigo} rechazado`);
+  renderAdminPedidosMensuales();
+}
+
+// Auto-rellena unidad en el selector extra del pedido mensual
+function onExtraInsumoChange(sel, pedidoId) {
+  const opt = sel.options[sel.selectedIndex];
+  const unidad = opt?.dataset?.unidad;
+  if (unidad) {
+    const unidadSel = document.getElementById('extra-unidad-' + pedidoId);
+    if (unidadSel) {
+      for (let o of unidadSel.options) { if (o.value === unidad) { o.selected = true; break; } }
+    }
+  }
+}
+
+function reabrirPedido(id) {
+  const p = pedidosMensuales.find(p => p.id === id);
+  if (p) { p.estado = 'BORRADOR'; p.observacion = ''; saveState(); renderPedidosMensuales(); showToast('↩ Pedido devuelto a borrador para corrección'); }
+}
+
+function exportarPedido(id) {
+  const p = pedidosMensuales.find(p => p.id === id);
+  if (!p) return;
+  const lineas = [`PEDIDO DE COTIZACIÓN — ${p.codigo}`, `Mes: ${p.mes}`, `Estado: ${p.estado}`, `Generado por: ${p.creador}`, '', 'INSUMOS:', ...p.items.map(i => `  - ${i.nombre}: ${i.cantPedida} ${i.unidad}`), '', p.observacion ? `Observación: ${p.observacion}` : ''];
+  const blob = new Blob([lineas.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `${p.codigo}_cotizacion.txt`; a.click();
+  showToast('📄 Archivo de cotización descargado');
+}
+
+// ── Tab inventario en showTab ──
+function renderInventarioPanel() {
+  renderInvStats();
+  renderAlertas();
+  checkAlertaMensual();
+  renderInventario();
+}
+
+// ═══════════════════════════════════════════════
+//  AUTENTICACIÓN
+// ═══════════════════════════════════════════════
+
+// ── Credenciales (cambiar aquí si se actualizan) ──
+const CREDENCIALES = {
+  asistente: 'tons2026',
+  bodega:    'bodega2026',
+  admin:     'admin2026',
+};
+
+// ── Permisos por rol: tabs visibles y tab inicial ──
+const PERMISOS = {
+  asistente: { tabs: ['solicitud', 'dashboard'],              inicio: 'solicitud' },
+  bodega:    { tabs: ['bodega', 'inventario', 'dashboard'],   inicio: 'bodega'    },
+  admin:     { tabs: ['solicitud','bodega','admin','dashboard','inventario'], inicio: 'admin' },
+};
+
+let currentUser = null;
+let currentRol  = null;
+let rolSeleccionado = null;
+
+function seleccionarRol(rol) {
+  rolSeleccionado = rol;
+  // Resaltar tarjeta
+  ['asistente','bodega','admin'].forEach(r =>
+    document.getElementById('rc-' + r).classList.toggle('selected', r === rol)
+  );
+  // Mostrar campo nombre solo para asistentes
+  document.getElementById('field-nombre').style.display = rol === 'asistente' ? 'block' : 'none';
+  document.getElementById('field-pass').style.display   = 'block';
+  document.getElementById('login-btn').style.display    = 'block';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-pass').focus();
+}
+
+function doLogin() {
+  const pass = document.getElementById('login-pass').value;
+  const error = document.getElementById('login-error');
+
+  if (!rolSeleccionado) { error.textContent = 'Selecciona tu rol primero.'; error.classList.add('show'); return; }
+
+  if (rolSeleccionado === 'asistente') {
+    const nombre = document.getElementById('login-nombre').value;
+    if (!nombre) { error.textContent = 'Selecciona tu nombre.'; error.classList.add('show'); return; }
+    if (pass !== CREDENCIALES.asistente) { error.textContent = 'Contraseña incorrecta.'; error.classList.add('show'); shakeBox(); return; }
+    currentUser = nombre;
+  } else if (rolSeleccionado === 'bodega') {
+    if (pass !== CREDENCIALES.bodega) { error.textContent = 'Contraseña incorrecta.'; error.classList.add('show'); shakeBox(); return; }
+    currentUser = 'Javiera';
+  } else if (rolSeleccionado === 'admin') {
+    if (pass !== CREDENCIALES.admin) { error.textContent = 'Contraseña incorrecta.'; error.classList.add('show'); shakeBox(); return; }
+    currentUser = 'Sayen';
+  }
+
+  currentRol = rolSeleccionado;
+  error.classList.remove('show');
+  document.getElementById('login-overlay').classList.add('hidden');
+
+  // Mostrar chip de usuario
+  const roleLabel = { asistente: '🦷', bodega: '📦', admin: '🏛️' };
+  document.getElementById('user-chip-label').textContent = `${roleLabel[currentRol]} ${currentUser}`;
+  document.getElementById('user-chip').style.display = 'inline-flex';
+
+  // Aplicar permisos de tabs
+  aplicarPermisos();
+
+  // Redirigir al tab inicial del rol
+  showTab(PERMISOS[currentRol].inicio);
+
+  // Si es asistente, preseleccionar su nombre en el formulario
+  if (currentRol === 'asistente') {
+    document.getElementById('sel-asistente').value = currentUser;
+  }
+}
+
+function doLogout() {
+  currentUser = null; currentRol = null; rolSeleccionado = null;
+  // Resetear login
+  ['asistente','bodega','admin'].forEach(r => document.getElementById('rc-' + r).classList.remove('selected'));
+  document.getElementById('field-nombre').style.display = 'none';
+  document.getElementById('field-pass').style.display   = 'none';
+  document.getElementById('login-btn').style.display    = 'none';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-nombre').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('user-chip').style.display = 'none';
+  document.getElementById('login-overlay').classList.remove('hidden');
+  // Restaurar todos los tabs visibles (el login los ocultará igual)
+  ['solicitud','bodega','admin','dashboard','inventario'].forEach(t => {
+    const btn = document.getElementById('tab-' + t);
+    if (btn) btn.style.display = 'flex';
+  });
+}
+
+function aplicarPermisos() {
+  const permitidos = PERMISOS[currentRol]?.tabs || [];
+  ['solicitud','bodega','admin','dashboard','inventario'].forEach(t => {
+    const btn = document.getElementById('tab-' + t);
+    if (btn) btn.style.display = permitidos.includes(t) ? 'flex' : 'none';
+  });
+}
+
+function shakeBox() {
+  const box = document.querySelector('.login-box');
+  box.style.animation = 'none';
+  box.style.transform = 'translateX(-8px)';
+  setTimeout(() => { box.style.transform = 'translateX(8px)'; }, 80);
+  setTimeout(() => { box.style.transform = 'translateX(-5px)'; }, 160);
+  setTimeout(() => { box.style.transform = 'translateX(0)'; box.style.animation = ''; }, 240);
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+document.getElementById('weekDisplay').textContent = getWeekLabel();
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+addInsumoRow();
+
+// ── Ocultar tabs y mostrar spinner hasta que Firebase conecte ──
+['solicitud','bodega','admin','dashboard','inventario'].forEach(t => {
+  const btn = document.getElementById('tab-' + t);
+  if (btn) btn.style.display = 'none';
+});
+
+// ── Firebase listener en tiempo real ──
+db.ref('mv').on('value', snap => {
+  const s = snap.val();
+  if (s) {
+    tickets          = snapToArr(s.tickets);
+    inventario       = snapToArr(s.inventario);
+    pedidosMensuales = snapToArr(s.pedidosMensuales);
+    ticketCounter    = s.ticketCounter    || {};
+    invIdCounter     = s.invIdCounter     || 200;
+  }
+  if (!_fbReady) {
+    // Primera conexión
+    _fbReady = true;
+    if (!s) {
+      // Base de datos vacía: guardar estado inicial (inventario pre-cargado)
+      saveState();
+    }
+    sincronizarCatalogo();
+    renderAlertas();
+  } else {
+    // Actualización de otro cliente: re-renderizar vista activa
+    sincronizarCatalogo();
+    renderAlertas();
+    const activePanel = document.querySelector('.panel.active')?.id?.replace('panel-','');
+    if (activePanel === 'bodega')     renderBodega();
+    if (activePanel === 'admin')      renderAdmin();
+    if (activePanel === 'dashboard')  renderDashboard();
+    if (activePanel === 'inventario') renderInventarioPanel();
+    // Refrescar selects de solicitud si están en pantalla
+    document.querySelectorAll('#insumos-body select:first-child').forEach(sel => {
+      const v = sel.value; sel.innerHTML = buildInsumoOptions(v);
+    });
+  }
+}, err => {
+  console.error('Firebase error:', err);
+  showToast('⚠️ Sin conexión a Firebase — revisa la configuración');
+});
+
+// Ocultar tabs hasta que inicie sesión
+['solicitud','bodega','admin','dashboard','inventario'].forEach(t => {
+  const btn = document.getElementById('tab-' + t);
+  if (btn) btn.style.display = 'none';
+});
+</script>
+</body>
+</html>
