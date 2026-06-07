@@ -1351,11 +1351,13 @@ function updateBodegaCard(id) {
   const el = document.getElementById(`bodega-card-${id}`);
   if (!t || !el) { renderBodega(); return; }
   const wasOpen = el.open;
+  const scrollY = window.scrollY;
   const tmp = document.createElement('div');
   tmp.innerHTML = renderBodegaCard(t);
-  el.parentNode.replaceChild(tmp.firstElementChild, el);
-  const newEl = document.getElementById(`bodega-card-${id}`);
-  if (newEl && wasOpen) newEl.open = true;
+  const newCard = tmp.firstElementChild;
+  if (wasOpen) newCard.open = true; // setear antes de insertar para evitar salto visual
+  el.parentNode.replaceChild(newCard, el);
+  window.scrollTo(0, scrollY); // restaurar posición de scroll
 }
 
 function renderBodegaCard(t) {
