@@ -1341,12 +1341,73 @@ function renderBoxTickets(box) {
 // ═══════════════════════════════════════════════
 function renderBodega() {
   const container = document.getElementById('bodega-tickets-container');
-  const open = tickets.filter(t => ['ABIERTO','REVISION','PARCIAL'].includes(t.estado));
-  if (open.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No hay tickets pendientes de revisión.</p></div>';
+
+  const pendientes = tickets.filter(t =>
+    ['ABIERTO','REVISION','PARCIAL'].includes(t.estado) &&
+    !['ENTREGA_COMPLETA','ENTREGA_PARCIAL','RECHAZADO'].includes(t.progreso)
+  );
+  const entregados = tickets.filter(t =>
+    ['ENTREGA_COMPLETA','ENTREGA_PARCIAL'].includes(t.progreso)
+  );
+  const rechazados = tickets.filter(t => t.progreso === 'RECHAZADO');
+
+  if (!pendientes.length && !entregados.length && !rechazados.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No hay tickets esta semana.</p></div>';
     return;
   }
-  container.innerHTML = open.map(t => renderBodegaCard(t)).join('');
+
+  let html = '';
+
+  if (pendientes.length) {
+    html += `<div class="section-title" style="color:var(--teal-dark); margin-top:0;">⏳ Pendientes de revisión <span style="font-weight:400; font-size:0.8rem; color:var(--gray);">(${pendientes.length})</span></div>`;
+    html += pendientes.map(t => renderBodegaCard(t)).join('');
+  } else {
+    html += `<div style="padding:12px 14px; background:var(--success-light); border-radius:8px; font-size:0.88rem; color:var(--success); font-weight:600; margin-bottom:16px;">✅ Sin pedidos pendientes — todo al día</div>`;
+  }
+
+  if (entregados.length) {
+    html += `<div class="section-title" style="color:var(--success); margin-top:20px;">✅ Entregados <span style="font-weight:400; font-size:0.8rem; color:var(--gray);">(${entregados.length})</span></div>`;
+    html += entregados.map(t => renderBodegaCardResumen(t)).join('');
+  }
+
+  if (rechazados.length) {
+    html += `<div class="section-title" style="color:var(--danger); margin-top:20px;">↩️ Devueltos al asistente <span style="font-weight:400; font-size:0.8rem; color:var(--gray);">(${rechazados.length})</span></div>`;
+    html += rechazados.map(t => renderBodegaCardResumen(t)).join('');
+  }
+
+  container.innerHTML = html;
+}
+
+function renderBodegaCardResumen(t) {
+  const esEntrega = ['ENTREGA_COMPLETA','ENTREGA_PARCIAL'].includes(t.progreso);
+  const bgSum   = esEntrega ? 'var(--success-light)' : 'var(--danger-light)';
+  const clrSum  = esEntrega ? 'var(--success)' : 'var(--danger)';
+  const icono   = t.progreso === 'ENTREGA_COMPLETA' ? '✅' : t.progreso === 'ENTREGA_PARCIAL' ? '📦' : '↩️';
+  const etiq    = t.progreso === 'ENTREGA_COMPLETA' ? 'Entrega completa' : t.progreso === 'ENTREGA_PARCIAL' ? 'Entrega parcial' : 'Devuelto con observación';
+
+  const itemRows = t.items.map(i => {
+    const badgeCls = i.estado === 'DISPONIBLE' ? 'badge-disponible' : i.estado === 'PARCIAL' ? 'badge-parcial' : i.estado === 'SIN_STOCK' ? 'badge-sinstock' : 'badge-pendiente';
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #f0f0f0; font-size:0.84rem; gap:8px;">
+      <span style="flex:1;">${i.nombre}</span>
+      <span style="color:var(--gray); white-space:nowrap; font-size:0.78rem;">${i.cantidad} ${i.unidad}</span>
+      <span class="badge ${badgeCls}">${i.estado === 'DISPONIBLE' ? '✅ Entregado' : i.estado === 'PARCIAL' ? '⚡ Parcial' : i.estado === 'SIN_STOCK' ? '❌ Sin stock' : '⏳ Pendiente'}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <details style="margin-bottom:10px; border-radius:10px; overflow:hidden; border:1px solid ${esEntrega ? '#a5d6a7' : '#ef9a9a'}; opacity:0.9;">
+      <summary style="padding:12px 16px; background:${bgSum}; display:flex; align-items:center; gap:8px; flex-wrap:wrap; cursor:pointer; list-style:none;">
+        <span style="font-size:0.75rem; font-family:monospace; color:var(--gray);">${t.code}</span>
+        <strong>${t.box}</strong> — ${t.asistente}
+        <span style="font-size:0.82rem; font-weight:700; color:${clrSum}; margin-left:auto;">${icono} ${etiq}</span>
+      </summary>
+      <div style="padding:12px 16px; background:white;">
+        ${itemRows}
+        ${t.observacionRechazo ? `<div style="margin-top:10px; padding:8px 12px; background:var(--danger-light); border-radius:6px; font-size:0.83rem; color:var(--danger);"><strong>Motivo:</strong> ${t.observacionRechazo}</div>` : ''}
+        ${t.faltantesEscalados?.length ? `<div style="margin-top:8px; padding:8px 12px; background:var(--warning-light); border-radius:6px; font-size:0.83rem; color:#b34700;"><strong>Escalados a Administración:</strong> ${t.faltantesEscalados.join(', ')}</div>` : ''}
+      </div>
+    </details>
+  `;
 }
 
 function updateBodegaCard(id) {
@@ -1542,7 +1603,7 @@ function entregarCompleto(id) {
   t.estado = 'PENDIENTE';
   saveState();
   showToast(`✅ Entrega completa registrada — ${t.code} listo para retirar`);
-  updateBodegaCard(id);
+  renderBodega();
   renderDashboard();
 }
 
@@ -1562,7 +1623,7 @@ function entregarParcial(id) {
   t.faltantesEscalados = faltantes.map(i => i.nombre);
   saveState();
   showToast(`📦 Entrega parcial — ${disponibles.length} entregados, ${faltantes.length} faltante(s) escalados a Administración`);
-  updateBodegaCard(id);
+  renderBodega();
   renderDashboard();
 }
 
@@ -1581,7 +1642,7 @@ function rechazarConObservacion(id) {
   t.despachado = false;
   saveState();
   showToast(`✕ Pedido ${t.code} devuelto a ${t.asistente} con observación`);
-  updateBodegaCard(id);
+  renderBodega();
   renderDashboard();
 }
 
