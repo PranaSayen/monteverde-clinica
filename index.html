@@ -276,77 +276,116 @@
 
   /* ── RESPONSIVE MÓVIL ── */
   @media (max-width: 680px) {
-    /* Header */
-    header { padding: 0 12px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 4px; }
-    header h1 { font-size: 1.1rem; }
-    header .subtitle { font-size: 0.7rem; }
-    #weekDisplay { font-size: 0.72rem; }
-    .user-chip { padding: 4px 10px; font-size: 0.78rem; }
 
-    /* Tabs — scroll horizontal */
-    .tabs { padding: 0; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
-    .tab-btn { padding: 10px 12px; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; }
-    .tab-icon { font-size: 0.95rem; }
+    /* ─ Header limpio en 2 líneas ─ */
+    header {
+      padding: 8px 14px; height: auto; flex-direction: column;
+      align-items: flex-start; gap: 4px;
+    }
+    header .logo { gap: 8px; }
+    header h1 { font-size: 1rem; }
+    header .subtitle { font-size: 0.68rem; }
+    header > div:last-child { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+    #weekDisplay { font-size: 0.7rem; opacity: 0.75; }
+    .user-chip { padding: 3px 10px; font-size: 0.75rem; }
 
-    /* Main */
-    .main { padding: 12px 8px 60px; }
-    .card { padding: 14px 12px; }
-    .modal { width: 97%; }
+    /* ─ Tabs scroll horizontal ─ */
+    .tabs { padding: 0 4px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border); }
+    .tab-btn { padding: 10px 11px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; }
+    .tab-icon { font-size: 0.9rem; }
 
-    /* Tabla de insumos — convertir a cards en móvil */
+    /* ─ Layout general ─ */
+    .main { padding: 12px 10px 70px; }
+    .card { padding: 14px 12px; border-radius: 8px; margin-bottom: 12px; }
+    .card-title { font-size: 0.95rem; padding-bottom: 10px; margin-bottom: 14px; }
+    .modal { width: 97%; margin: 10px; }
+    .section-title { font-size: 0.78rem; margin: 16px 0 8px; }
+
+    /* ─ Stats ─ */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .stat-card { padding: 14px 10px; border-radius: 8px; }
+    .stat-number { font-size: 1.8rem; }
+    .stat-label { font-size: 0.72rem; }
+
+    /* ─ Formulario solicitud ─ */
+    .form-row { flex-direction: column; gap: 10px; }
+    .form-group { min-width: 0; }
+    .form-group input, .form-group select { font-size: 0.95rem; padding: 10px 12px; }
+
+    /* ─ Tabla insumos → cards ─ */
+    .insumos-table { font-size: 0.88rem; }
     .insumos-table thead { display: none; }
     .insumos-table tr {
-      display: flex; flex-direction: column; gap: 6px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
       background: var(--gray-light); border-radius: 8px;
       padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--border);
     }
-    .insumos-table td { padding: 0; border: none; font-size: 0.88rem; }
-    .insumos-table td:nth-child(1)::before { content: "Insumo: "; font-weight: 700; color: var(--teal-dark); }
-    .insumos-table td:nth-child(2)::before { content: "Cantidad: "; font-weight: 700; color: var(--gray); }
-    .insumos-table td:nth-child(3)::before { content: "Unidad: "; font-weight: 700; color: var(--gray); }
-    .insumos-table td:nth-child(4)::before { content: "Urgente: "; font-weight: 700; color: var(--gray); }
-    .insumos-table td:nth-child(5)::before { content: "Obs.: "; font-weight: 700; color: var(--gray); }
-    .insumos-table select,
-    .insumos-table input { width: 100% !important; }
+    .insumos-table td { padding: 0; border: none; }
+    .insumos-table td:nth-child(1) { width: 100%; }
+    .insumos-table td:nth-child(1) select { width: 100%; font-size: 0.88rem; }
+    .insumos-table td:nth-child(2) input { width: 65px; }
+    .insumos-table td:nth-child(6) { margin-left: auto; }
 
-    /* Tabla inventario — scroll horizontal */
-    .inv-table { font-size: 0.78rem; }
-    .inv-table th, .inv-table td { padding: 7px 8px; }
-    .stock-bar-wrap { display: none; }
-    .qty-ctrl button { width: 30px; height: 30px; font-size: 1rem; }
+    /* ─ Tabla inventario → cards ─ */
+    .inv-table thead { display: none; }
+    #inv-tbody tr {
+      display: block; background: var(--white); border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 8px;
+      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    #inv-tbody td { display: block; padding: 2px 0; border: none; }
+    #inv-tbody td:nth-child(1) { font-weight: 700; font-size: 0.9rem; color: var(--teal-dark); margin-bottom: 4px; }
+    #inv-tbody td:nth-child(2) { font-size: 0.75rem; color: var(--gray); }
+    #inv-tbody td:nth-child(3) { font-size: 0.88rem; margin: 4px 0; }
+    #inv-tbody td:nth-child(4) { font-size: 0.8rem; color: var(--gray); }
+    #inv-tbody td:nth-child(5) { display: none; } /* ocultar unidad duplicada */
+    #inv-tbody td:nth-child(6) { margin: 6px 0 4px; }
+    #inv-tbody td:nth-child(7) { display: flex; gap: 6px; margin-top: 6px; }
+    #inv-tbody td:nth-child(8) { display: flex; gap: 6px; }
+    .stock-bar-wrap { display: inline-block; width: 60px; height: 6px; margin-left: 6px; vertical-align: middle; }
+    .qty-ctrl { gap: 6px; }
+    .qty-ctrl button { width: 32px; height: 32px; font-size: 1rem; }
+    .qty-val { font-size: 0.95rem; min-width: 32px; }
 
-    /* Stats grid */
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .stat-number { font-size: 1.7rem; }
-
-    /* Ticket grid */
-    .ticket-grid { grid-template-columns: 1fr; }
-
-    /* Formulario solicitud */
-    .form-row { flex-direction: column; gap: 10px; }
-    .form-group { min-width: 0; }
-
-    /* Filters chips */
-    .filters { gap: 6px; }
-    .filter-chip { padding: 5px 10px; font-size: 0.78rem; }
-
-    /* Login */
-    .login-box { padding: 28px 20px; }
-    .role-cards { gap: 8px; }
-    .role-card { padding: 12px 6px; min-width: 0; }
-    .role-card .rc-icon { font-size: 1.4rem; }
-    .role-card .rc-label { font-size: 0.72rem; }
-
-    /* Tablas de inventario en scroll */
-    .inv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    #inv-tabla { min-width: 600px; }
-
-    /* Botones acción en bodega */
+    /* ─ Botones ─ */
     .btn { padding: 9px 14px; font-size: 0.84rem; }
     .btn-sm { padding: 6px 10px; font-size: 0.76rem; }
+    .btn-ghost { font-size: 0.76rem; padding: 4px 8px; }
 
-    /* Progreso bodega */
-    .item-status-row { flex-wrap: wrap; }
+    /* ─ Filtros ─ */
+    .filters { gap: 6px; margin-bottom: 12px; }
+    .filter-chip { padding: 5px 10px; font-size: 0.76rem; }
+
+    /* ─ Ticket grid ─ */
+    .ticket-grid { grid-template-columns: 1fr; gap: 10px; }
+    .ticket-card { padding: 14px; }
+
+    /* ─ Item status row ─ */
+    .item-status-row { flex-wrap: wrap; gap: 6px; padding: 8px 0; }
+    .item-name { width: 100%; font-size: 0.88rem; }
+    .item-qty { font-size: 0.8rem; }
+
+    /* ─ Alertas ─ */
+    .alert-banner { padding: 12px 14px; }
+    .alert-banner .alert-icon { font-size: 1.2rem; }
+    .alert-banner .alert-title { font-size: 0.88rem; }
+    .alert-banner .alert-desc { font-size: 0.78rem; }
+
+    /* ─ Modal ─ */
+    .modal-body { padding: 16px; }
+    .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
+
+    /* ─ Filtros inventario ─ */
+    #inv-filtro-cat, #inv-filtro-estado { font-size: 0.78rem; padding: 5px 8px; }
+
+    /* ─ Rank table ─ */
+    .rank-table { font-size: 0.8rem; }
+    .rank-table th, .rank-table td { padding: 6px 8px; }
+    .bar-wrap { width: 60px; }
+
+    /* ─ Login (ya se ve bien, solo pequeños ajustes) ─ */
+    .login-box { padding: 28px 18px; }
+    .login-logo h2 { font-size: 1.4rem; }
   }
 
   /* ── WEEK LABEL ── */
