@@ -1350,14 +1350,25 @@ function updateBodegaCard(id) {
   const t = tickets.find(t => t.id === id);
   const el = document.getElementById(`bodega-card-${id}`);
   if (!t || !el) { renderBodega(); return; }
-  const wasOpen = el.open;
-  const scrollY = window.scrollY;
+
+  // Parsear el nuevo HTML en un elemento temporal
   const tmp = document.createElement('div');
   tmp.innerHTML = renderBodegaCard(t);
   const newCard = tmp.firstElementChild;
-  if (wasOpen) newCard.open = true; // setear antes de insertar para evitar salto visual
-  el.parentNode.replaceChild(newCard, el);
-  window.scrollTo(0, scrollY); // restaurar posición de scroll
+
+  // Actualizar SOLO el contenido del <summary> (badges de estado)
+  const elSum = el.querySelector('summary');
+  const newSum = newCard.querySelector('summary');
+  if (elSum && newSum) elSum.innerHTML = newSum.innerHTML;
+
+  // Reemplazar SOLO el cuerpo (div de contenido), sin tocar el <details>
+  // → así el atributo open se conserva naturalmente
+  Array.from(el.children)
+    .filter(c => c.tagName !== 'SUMMARY')
+    .forEach(c => el.removeChild(c));
+  Array.from(newCard.children)
+    .filter(c => c.tagName !== 'SUMMARY')
+    .forEach(c => el.appendChild(c));
 }
 
 function renderBodegaCard(t) {
