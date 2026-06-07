@@ -522,6 +522,42 @@
   }
   .inv-form-row input:focus, .inv-form-row select:focus { outline: none; border-color: var(--teal); background: var(--white); }
   .inv-form-row label { font-size: 0.78rem; font-weight: 600; color: var(--gray); display: block; margin-bottom: 4px; }
+
+  /* ── PICKER BUSCADOR DE INSUMO ── */
+  .mobile-row-label { display:none; font-size:0.75rem; font-weight:700; color:var(--gray); margin-bottom:5px; letter-spacing:0.3px; }
+  .insumo-picker { position:relative; width:100%; }
+  .insumo-search-inp {
+    width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:6px;
+    font-size:0.9rem; font-family:inherit; background:#fafafa;
+    transition:border-color 0.2s, background 0.2s; cursor:pointer;
+  }
+  .insumo-search-inp::placeholder { color:#aaa; }
+  .insumo-search-inp:focus { outline:none; border-color:var(--teal); background:var(--white); cursor:text; }
+  .insumo-picker.has-value .insumo-search-inp { background:var(--teal-light); border-color:var(--teal); font-weight:600; color:var(--teal-dark); }
+  .insumo-ddlist {
+    display:none; position:absolute; top:calc(100% + 4px); left:0; right:0;
+    background:var(--white); border:1.5px solid var(--teal); border-radius:8px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.15); z-index:80; max-height:280px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .insumo-ddlist.open { display:block; }
+  .insumo-opt-grp { font-size:0.7rem; font-weight:800; color:var(--teal); background:var(--teal-light); padding:6px 12px; letter-spacing:0.5px; border-bottom:1px solid var(--border); text-transform:uppercase; position:sticky; top:0; }
+  .insumo-opt { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f0f0; gap:8px; }
+  .insumo-opt:last-child { border-bottom:none; }
+  .insumo-opt:hover, .insumo-opt:active { background:var(--teal-light); }
+  .insumo-opt .opt-nombre { font-size:0.88rem; font-weight:500; color:#222; flex:1; }
+  .insumo-opt .opt-stock { font-size:0.72rem; padding:2px 8px; border-radius:10px; white-space:nowrap; flex-shrink:0; }
+  .opt-stock-inv-ok { background:var(--success-light); color:var(--success); }
+  .opt-stock-inv-low { background:var(--warning-light); color:#b34700; }
+  .opt-stock-cat { background:#f0f0f0; color:var(--gray); }
+  .insumo-empty { padding:16px; text-align:center; color:var(--gray); font-size:0.85rem; }
+  @media (max-width:680px) {
+    .mobile-row-label { display:block; }
+    .insumo-search-inp { font-size:0.95rem; padding:10px 12px; }
+    .insumo-ddlist { max-height:300px; }
+    .insumo-opt { padding:12px 14px; }
+    .insumo-opt .opt-nombre { font-size:0.9rem; }
+  }
 </style>
 </head>
 <body>
@@ -1068,17 +1104,104 @@ function onInsumoChange(sel) {
   }
 }
 
+// ─── PICKER BUSCADOR DE INSUMOS ───
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getInsumoList() {
+  const list = [];
+  inventario.forEach(i => list.push({ nombre: i.nombre, unidad: i.unidad || 'Unidad', stock: i.stock, min: i.min, enInventario: true }));
+  const invNombres = inventario.map(x => x.nombre);
+  (typeof CATALOGO_BASE !== 'undefined' ? CATALOGO_BASE : []).filter(n => !invNombres.includes(n)).forEach(n => {
+    list.push({ nombre: n, unidad: 'Unidad', stock: null, min: 0, enInventario: false });
+  });
+  return list;
+}
+
+function renderPickerDropdown(pickerEl, query) {
+  const ddl = pickerEl.querySelector('.insumo-ddlist');
+  const list = getInsumoList();
+  const q = query.toLowerCase().trim();
+  const filtered = q ? list.filter(i => i.nombre.toLowerCase().includes(q)) : list;
+  if (!filtered.length) { ddl.innerHTML = '<div class="insumo-empty">Sin resultados para "' + escHtml(query) + '"</div>'; return; }
+  const enInv = filtered.filter(i => i.enInventario);
+  const enCat = filtered.filter(i => !i.enInventario);
+  let html = '';
+  if (enInv.length) {
+    html += '<div class="insumo-opt-grp">📦 En inventario</div>';
+    enInv.forEach(i => {
+      const cls = (i.stock <= 0 || i.stock <= i.min) ? 'opt-stock-inv-low' : 'opt-stock-inv-ok';
+      html += `<div class="insumo-opt" data-nombre="${escHtml(i.nombre)}" data-unidad="${escHtml(i.unidad)}" onclick="selectInsumoOpt(this)">
+        <span class="opt-nombre">${escHtml(i.nombre)}</span>
+        <span class="opt-stock ${cls}">${i.stock} ${i.unidad}</span>
+      </div>`;
+    });
+  }
+  if (enCat.length) {
+    html += '<div class="insumo-opt-grp">📋 Catálogo</div>';
+    enCat.forEach(i => {
+      html += `<div class="insumo-opt" data-nombre="${escHtml(i.nombre)}" data-unidad="${escHtml(i.unidad)}" onclick="selectInsumoOpt(this)">
+        <span class="opt-nombre">${escHtml(i.nombre)}</span>
+        <span class="opt-stock opt-stock-cat">catálogo</span>
+      </div>`;
+    });
+  }
+  ddl.innerHTML = html;
+}
+
+function selectInsumoOpt(optEl) {
+  const picker = optEl.closest('.insumo-picker');
+  const nombre = optEl.dataset.nombre;
+  const unidad = optEl.dataset.unidad;
+  picker.dataset.value = nombre;
+  picker.querySelector('.insumo-search-inp').value = nombre;
+  picker.classList.add('has-value');
+  picker.querySelector('.insumo-ddlist').classList.remove('open');
+  const row = picker.closest('tr');
+  if (row && unidad) {
+    const unidadSel = row.querySelector('select.unidad-sel');
+    if (unidadSel) { for (let o of unidadSel.options) { if (o.value === unidad) { o.selected = true; break; } } }
+  }
+}
+
+function initInsumoPicker(pickerEl) {
+  const inp = pickerEl.querySelector('.insumo-search-inp');
+  const ddl = pickerEl.querySelector('.insumo-ddlist');
+  inp.addEventListener('focus', () => {
+    inp.select();
+    renderPickerDropdown(pickerEl, '');
+    ddl.classList.add('open');
+    setTimeout(() => pickerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+  });
+  inp.addEventListener('input', () => {
+    pickerEl.dataset.value = '';
+    pickerEl.classList.remove('has-value');
+    renderPickerDropdown(pickerEl, inp.value);
+    ddl.classList.add('open');
+  });
+  inp.addEventListener('blur', () => {
+    setTimeout(() => {
+      ddl.classList.remove('open');
+      if (pickerEl.dataset.value) inp.value = pickerEl.dataset.value;
+      else inp.value = '';
+    }, 220);
+  });
+}
+
 function addInsumoRow(nombre = '', cantidad = 1, unidad = 'Unidad', urgente = false, obs = '') {
   const tbody = document.getElementById('insumos-body');
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>
-      <select onchange="onInsumoChange(this)" style="width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.84rem;">
-        ${buildInsumoOptions(nombre)}
-      </select>
+      <div class="mobile-row-label">Insumo / Producto</div>
+      <div class="insumo-picker" data-value="${escHtml(nombre)}">
+        <input type="text" class="insumo-search-inp" placeholder="🔍 Buscar insumo..." autocomplete="off" spellcheck="false" value="${escHtml(nombre)}">
+        <div class="insumo-ddlist"></div>
+      </div>
     </td>
-    <td><input type="number" min="1" value="${cantidad}" style="width:70px; padding:5px 6px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;"></td>
-    <td><select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;">
+    <td><input type="number" class="cant-input" min="1" value="${cantidad}" style="width:70px; padding:5px 6px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;"></td>
+    <td><select class="unidad-sel" style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;">
       <option ${unidad==='Caja'?'selected':''}>Caja</option>
       <option ${unidad==='Unidad'?'selected':''}>Unidad</option>
       <option ${unidad==='Frasco'?'selected':''}>Frasco</option>
@@ -1088,12 +1211,15 @@ function addInsumoRow(nombre = '', cantidad = 1, unidad = 'Unidad', urgente = fa
       <option ${unidad==='Jeringa'?'selected':''}>Jeringa</option>
     </select></td>
     <td style="text-align:center;">
-      <input type="checkbox" ${urgente ? 'checked' : ''} title="Urgente" style="width:18px;height:18px;cursor:pointer;">
+      <input type="checkbox" class="urg-check" ${urgente ? 'checked' : ''} title="Urgente" style="width:18px;height:18px;cursor:pointer;">
     </td>
-    <td><input type="text" placeholder="Observación opcional" value="${obs}" style="width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;"></td>
+    <td><input type="text" class="obs-input" placeholder="Observación opcional" value="${escHtml(obs)}" style="width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.82rem;"></td>
     <td><button class="remove-btn" onclick="this.closest('tr').remove()" title="Eliminar">✕</button></td>
   `;
   tbody.appendChild(tr);
+  const pickerEl = tr.querySelector('.insumo-picker');
+  if (nombre) pickerEl.classList.add('has-value');
+  initInsumoPicker(pickerEl);
 }
 
 // ─── PLANTILLA ───
@@ -1132,16 +1258,14 @@ function crearTicket() {
 
   const items = [];
   for (const row of rows) {
-    const selects = row.querySelectorAll('select');
-    const inputs  = row.querySelectorAll('input');
-    const nombre = selects[0].value; // select de insumo
-    if (!nombre) { showToast('⚠️ Selecciona un insumo del listado en todas las filas'); return; }
+    const nombre = row.querySelector('.insumo-picker')?.dataset.value || '';
+    if (!nombre) { showToast('⚠️ Selecciona un insumo en todas las filas'); return; }
     items.push({
       nombre,
-      cantidad: parseInt(inputs[0].value) || 1, // input number
-      unidad: selects[1].value,                  // select unidad
-      urgente: inputs[1].checked,                // checkbox urgente
-      obs: inputs[2]?.value.trim() || '',        // input obs
+      cantidad: parseInt(row.querySelector('.cant-input')?.value) || 1,
+      unidad: row.querySelector('.unidad-sel')?.value || 'Unidad',
+      urgente: row.querySelector('.urg-check')?.checked || false,
+      obs: row.querySelector('.obs-input')?.value.trim() || '',
       estado: 'PENDIENTE'
     });
   }
@@ -2224,11 +2348,6 @@ function agregarInsumo() {
   saveState();
   showToast(`✅ "${nombre}" agregado al inventario`);
   sincronizarCatalogo();
-  // Refrescar selects de solicitud para que incluyan el nuevo insumo
-  document.querySelectorAll('#insumos-body select:first-child').forEach(sel => {
-    const val = sel.value;
-    sel.innerHTML = buildInsumoOptions(val);
-  });
   renderInventario();
   renderInvEditar();
 }
@@ -2816,10 +2935,6 @@ db.ref('mv').on('value', snap => {
     if (activePanel === 'admin')      renderAdmin();
     if (activePanel === 'dashboard')  renderDashboard();
     if (activePanel === 'inventario') renderInventarioPanel();
-    // Refrescar selects de solicitud si están en pantalla
-    document.querySelectorAll('#insumos-body select:first-child').forEach(sel => {
-      const v = sel.value; sel.innerHTML = buildInsumoOptions(v);
-    });
   }
 }, err => {
   console.error('Firebase error:', err);
