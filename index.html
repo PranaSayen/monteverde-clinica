@@ -744,7 +744,9 @@
   ══════════════════════════════════════════ -->
   <div class="panel" id="panel-bodega">
     <div class="card">
-      <div class="card-title">📦 Revisión de Stock — Bodega</div>
+      <div class="card-title">📦 Revisión de Stock — Bodega
+        <button onclick="renderBodega()" class="btn btn-outline" style="margin-left:auto; font-size:0.8rem; padding:6px 14px;">🔄 Actualizar</button>
+      </div>
       <p style="font-size:0.9rem; color:var(--gray); margin-bottom:18px;">
         Revisa cada ítem solicitado esta semana y marca su disponibilidad en bodega.
       </p>
@@ -1127,14 +1129,16 @@ function renderPickerDropdown(pickerEl, query) {
   if (!filtered.length) { ddl.innerHTML = '<div class="insumo-empty">Sin resultados para "' + escHtml(query) + '"</div>'; return; }
   const enInv = filtered.filter(i => i.enInventario);
   const enCat = filtered.filter(i => !i.enInventario);
+  const verStock = (typeof currentRol !== 'undefined') && currentRol !== 'asistente';
   let html = '';
   if (enInv.length) {
     html += '<div class="insumo-opt-grp">📦 En inventario</div>';
     enInv.forEach(i => {
       const cls = (i.stock <= 0 || i.stock <= i.min) ? 'opt-stock-inv-low' : 'opt-stock-inv-ok';
+      const stockBadge = verStock ? `<span class="opt-stock ${cls}">${i.stock} ${i.unidad}</span>` : '';
       html += `<div class="insumo-opt" data-nombre="${escHtml(i.nombre)}" data-unidad="${escHtml(i.unidad)}" onclick="selectInsumoOpt(this)">
         <span class="opt-nombre">${escHtml(i.nombre)}</span>
-        <span class="opt-stock ${cls}">${i.stock} ${i.unidad}</span>
+        ${stockBadge}
       </div>`;
     });
   }
@@ -1342,6 +1346,18 @@ function renderBodega() {
   container.innerHTML = open.map(t => renderBodegaCard(t)).join('');
 }
 
+function updateBodegaCard(id) {
+  const t = tickets.find(t => t.id === id);
+  const el = document.getElementById(`bodega-card-${id}`);
+  if (!t || !el) { renderBodega(); return; }
+  const wasOpen = el.open;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderBodegaCard(t);
+  el.parentNode.replaceChild(tmp.firstElementChild, el);
+  const newEl = document.getElementById(`bodega-card-${id}`);
+  if (newEl && wasOpen) newEl.open = true;
+}
+
 function renderBodegaCard(t) {
   const revisado = t.progreso && t.progreso !== null;
   const aprobado = ['APROBADO','ENTREGA_COMPLETA','ENTREGA_PARCIAL','LISTO'].includes(t.progreso);
@@ -1358,7 +1374,7 @@ function renderBodegaCard(t) {
     </div>` : '';
 
   return `
-    <details style="margin-bottom:14px; background:#fafcfd; border:1px solid #e0f0f8; border-radius:10px; overflow:hidden;">
+    <details id="bodega-card-${t.id}" style="margin-bottom:14px; background:#fafcfd; border:1px solid #e0f0f8; border-radius:10px; overflow:hidden;">
       <summary style="padding:14px 18px; background:var(--teal-light); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <span style="font-size:0.78rem; font-family:monospace; color:var(--gray);">${t.code}</span>
         <strong>${t.box}</strong> — ${t.asistente}
@@ -1457,7 +1473,7 @@ function setItemEstado(ticketId, itemIdx, estado) {
   }
   actualizarEstadoTicket(t);
   saveState();
-  renderBodega();
+  updateBodegaCard(ticketId);
 }
 
 function setCantParcial(ticketId, itemIdx, val) {
@@ -1485,7 +1501,7 @@ function marcarRevision(id) {
     t.estado = 'REVISION';
     actualizarEstadoTicket(t);
     showToast('📋 Ticket marcado como revisado');
-    renderBodega();
+    updateBodegaCard(id);
   }
 }
 
@@ -1494,7 +1510,7 @@ function setProgreso(id, paso) {
   if (!t) return;
   t.progreso = paso;
   saveState();
-  renderBodega();
+  updateBodegaCard(id);
 }
 
 function aprobarTicketBodega(id) { setProgreso(id, 'REVISADO'); }
@@ -1510,7 +1526,7 @@ function entregarCompleto(id) {
   t.estado = 'PENDIENTE';
   saveState();
   showToast(`✅ Entrega completa registrada — ${t.code} listo para retirar`);
-  renderBodega();
+  updateBodegaCard(id);
   renderDashboard();
 }
 
@@ -1530,7 +1546,7 @@ function entregarParcial(id) {
   t.faltantesEscalados = faltantes.map(i => i.nombre);
   saveState();
   showToast(`📦 Entrega parcial — ${disponibles.length} entregados, ${faltantes.length} faltante(s) escalados a Administración`);
-  renderBodega();
+  updateBodegaCard(id);
   renderDashboard();
 }
 
@@ -1549,7 +1565,7 @@ function rechazarConObservacion(id) {
   t.despachado = false;
   saveState();
   showToast(`✕ Pedido ${t.code} devuelto a ${t.asistente} con observación`);
-  renderBodega();
+  updateBodegaCard(id);
   renderDashboard();
 }
 
