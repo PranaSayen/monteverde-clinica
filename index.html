@@ -992,6 +992,7 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
 let _fbReady = false;
+let _localSave = false; // true cuando el cambio lo hizo este mismo cliente
 
 // Convierte lo que Firebase retorna (puede ser objeto con claves numéricas) a array
 function snapToArr(val) {
@@ -1003,6 +1004,8 @@ function snapToArr(val) {
 // Guarda todo el estado en Firebase — otros clientes reciben el update al instante
 function saveState() {
   if (!_fbReady) return;
+  _localSave = true;
+  setTimeout(() => { _localSave = false; }, 3000); // reset por si Firebase demora
   db.ref('mv').set({
     tickets,
     inventario,
@@ -2956,14 +2959,18 @@ db.ref('mv').on('value', snap => {
     sincronizarCatalogo();
     renderAlertas();
   } else {
-    // Actualización de otro cliente: re-renderizar vista activa
+    // Actualización recibida: re-renderizar solo si vino de otro cliente
     sincronizarCatalogo();
     renderAlertas();
-    const activePanel = document.querySelector('.panel.active')?.id?.replace('panel-','');
-    if (activePanel === 'bodega')     renderBodega();
-    if (activePanel === 'admin')      renderAdmin();
-    if (activePanel === 'dashboard')  renderDashboard();
-    if (activePanel === 'inventario') renderInventarioPanel();
+    if (!_localSave) {
+      // Cambio de otro dispositivo/usuario — re-renderizar vista activa
+      const activePanel = document.querySelector('.panel.active')?.id?.replace('panel-','');
+      if (activePanel === 'bodega')     renderBodega();
+      if (activePanel === 'admin')      renderAdmin();
+      if (activePanel === 'dashboard')  renderDashboard();
+      if (activePanel === 'inventario') renderInventarioPanel();
+    }
+    _localSave = false;
   }
 }, err => {
   console.error('Firebase error:', err);
