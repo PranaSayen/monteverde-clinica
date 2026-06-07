@@ -274,13 +274,79 @@
   .role-btn .role-name { font-weight: 700; font-size: 0.88rem; color: var(--teal-dark); }
   .role-btn .role-desc { font-size: 0.75rem; color: var(--gray); margin-top: 3px; }
 
-  /* ── RESPONSIVE ── */
-  @media (max-width: 600px) {
-    .tabs { padding: 0 8px; }
-    .tab-btn { padding: 12px 10px; font-size: 0.82rem; }
-    .main { padding: 16px 10px 50px; }
-    .card { padding: 16px; }
-    .modal { width: 96%; }
+  /* ── RESPONSIVE MÓVIL ── */
+  @media (max-width: 680px) {
+    /* Header */
+    header { padding: 0 12px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 4px; }
+    header h1 { font-size: 1.1rem; }
+    header .subtitle { font-size: 0.7rem; }
+    #weekDisplay { font-size: 0.72rem; }
+    .user-chip { padding: 4px 10px; font-size: 0.78rem; }
+
+    /* Tabs — scroll horizontal */
+    .tabs { padding: 0; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .tab-btn { padding: 10px 12px; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; }
+    .tab-icon { font-size: 0.95rem; }
+
+    /* Main */
+    .main { padding: 12px 8px 60px; }
+    .card { padding: 14px 12px; }
+    .modal { width: 97%; }
+
+    /* Tabla de insumos — convertir a cards en móvil */
+    .insumos-table thead { display: none; }
+    .insumos-table tr {
+      display: flex; flex-direction: column; gap: 6px;
+      background: var(--gray-light); border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--border);
+    }
+    .insumos-table td { padding: 0; border: none; font-size: 0.88rem; }
+    .insumos-table td:nth-child(1)::before { content: "Insumo: "; font-weight: 700; color: var(--teal-dark); }
+    .insumos-table td:nth-child(2)::before { content: "Cantidad: "; font-weight: 700; color: var(--gray); }
+    .insumos-table td:nth-child(3)::before { content: "Unidad: "; font-weight: 700; color: var(--gray); }
+    .insumos-table td:nth-child(4)::before { content: "Urgente: "; font-weight: 700; color: var(--gray); }
+    .insumos-table td:nth-child(5)::before { content: "Obs.: "; font-weight: 700; color: var(--gray); }
+    .insumos-table select,
+    .insumos-table input { width: 100% !important; }
+
+    /* Tabla inventario — scroll horizontal */
+    .inv-table { font-size: 0.78rem; }
+    .inv-table th, .inv-table td { padding: 7px 8px; }
+    .stock-bar-wrap { display: none; }
+    .qty-ctrl button { width: 30px; height: 30px; font-size: 1rem; }
+
+    /* Stats grid */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat-number { font-size: 1.7rem; }
+
+    /* Ticket grid */
+    .ticket-grid { grid-template-columns: 1fr; }
+
+    /* Formulario solicitud */
+    .form-row { flex-direction: column; gap: 10px; }
+    .form-group { min-width: 0; }
+
+    /* Filters chips */
+    .filters { gap: 6px; }
+    .filter-chip { padding: 5px 10px; font-size: 0.78rem; }
+
+    /* Login */
+    .login-box { padding: 28px 20px; }
+    .role-cards { gap: 8px; }
+    .role-card { padding: 12px 6px; min-width: 0; }
+    .role-card .rc-icon { font-size: 1.4rem; }
+    .role-card .rc-label { font-size: 0.72rem; }
+
+    /* Tablas de inventario en scroll */
+    .inv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #inv-tabla { min-width: 600px; }
+
+    /* Botones acción en bodega */
+    .btn { padding: 9px 14px; font-size: 0.84rem; }
+    .btn-sm { padding: 6px 10px; font-size: 0.76rem; }
+
+    /* Progreso bodega */
+    .item-status-row { flex-wrap: wrap; }
   }
 
   /* ── WEEK LABEL ── */
@@ -726,7 +792,7 @@
             </select>
           </div>
         </div>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;" class="inv-table-wrap">
           <table class="inv-table" id="inv-tabla">
             <thead>
               <tr>
